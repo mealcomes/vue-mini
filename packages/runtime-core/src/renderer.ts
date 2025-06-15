@@ -1,9 +1,9 @@
 import { ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
-import { reactive, ReactiveEffect } from "@vue/reactivity";
+import { ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
-import { setupComponent } from "packages/reactivity/src/component";
+import { createComponentInstance, setupComponent } from "packages/reactivity/src/component";
 
 
 /*
@@ -71,32 +71,11 @@ export function createRenderer(options) {
         hostInsert(el, container, anchor);
     }
 
-    // 结合index.html#8
+    // 结合index.html#8,#9
     const mountComponent = (vnode, container, anchor,) => {
-        // 组件可以基于自己的状态重新渲染 (effect)
-        const {
-            data = () => { },
-            props: propsOptions = {}   // 组件的props，其为defineProps
-        } = vnode.type;   // type 是组件对象 { props: {}, render(){} }  同时vnode也有也有props，其为h函数参数传入的
+        const instance = (vnode.component = createComponentInstance(vnode))
 
-        // 拿到数据并编程响应式
-        const state = reactive(data());
-
-        const instance = {
-            state,                 // 状态
-            vnode,                 // 组件的虚拟节点
-            subTree: null,         // 子树
-            isMounted: false,      // 是否挂载完成
-            update: null,          // 组件的更新函数
-            props: {},             // API defineProps的那个props
-            attrs: {},             // propsOptions - props = attrs
-            propsOptions,          // 组件的props，其为defineProps
-            component: null,
-        }
-
-        vnode.component = instance;
-
-        // 根据propsOptions 区分出 props和attrs
+        // 初始化instance.props和instance.attrs
         setupComponent(instance);
 
         setupRenderEffect(instance, vnode, container, anchor);
