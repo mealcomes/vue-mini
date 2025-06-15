@@ -3,6 +3,7 @@ import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
 import { reactive, ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
+import { setupComponent } from "packages/reactivity/src/component";
 
 
 /*
@@ -73,7 +74,10 @@ export function createRenderer(options) {
     // 结合index.html#8
     const mountComponent = (vnode, container, anchor,) => {
         // 组件可以基于自己的状态重新渲染 (effect)
-        const { data = () => { }, render } = vnode.type;
+        const {
+            data = () => { },
+            props: propsOptions = {}   // 组件的props，其为defineProps
+        } = vnode.type;   // type 是组件对象 { props: {}, render(){} }  同时vnode也有也有props，其为h函数参数传入的
 
         // 拿到数据并编程响应式
         const state = reactive(data());
@@ -83,17 +87,31 @@ export function createRenderer(options) {
             vnode,                 // 组件的虚拟节点
             subTree: null,         // 子树
             isMounted: false,      // 是否挂载完成
-            update: null           // 组件的更新函数
+            update: null,          // 组件的更新函数
+            props: {},             // API defineProps的那个props
+            attrs: {},             // propsOptions - props = attrs
+            propsOptions,          // 组件的props，其为defineProps
+            component: null,
         }
 
+        vnode.component = instance;
+
+        // 根据propsOptions 区分出 props和attrs
+        setupComponent(instance);
+
+        setupRenderEffect(instance, vnode, container, anchor);
+    }
+
+    // 将组件更新和响应式数据进行绑定
+    const setupRenderEffect = (instance, vnode, container, anchor,) => {
         // 组件更新函数
         const componentUpdateFn = () => {
-            // call(state, state)
-            // 前一个参数是绑定this(因为组件render函数里面会用到this)
-            // 后一个参数是将state作为参数传给render函数
+            // call(instance.state, instance.state)
+            // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
+            // 后一个参数是将state作为参数传给组件对象的render函数
             // render函数需要返回vnode(执行h函数得到的结果)
 
-            const subTree = render.call(state, state);
+            const subTree = vnode.type.render.call(instance.state, instance.state);
             if (!instance.isMounted) {
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
@@ -107,7 +125,7 @@ export function createRenderer(options) {
         }
 
         // 将组件更新函数变为ReactiveEffect，从而达到数据更新，派发组件的更新
-        const effect = new ReactiveEffect(componentUpdateFn, 
+        const effect = new ReactiveEffect(componentUpdateFn,
             () => queueJob(update));  // 异步更新组件，避免一次更改多个数据导致组件频繁更新
 
         const update = (instance.update = () => effect.run());

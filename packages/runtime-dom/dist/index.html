@@ -225,6 +225,7 @@
         // }, 1000);
 
         // // 8. 组件渲染
+        // // template ==> render
         // // 组件两个虚拟节点组成 h(VueComponent) = vnode 产生的是组件内的虚拟节点
         // // render 函数返回的h函数执行后获得的虚拟节点才是最终要渲染的内容(subTree)
         // // 如下，VueComponent中的render函数返回的h函数得到的vnode(subTree)才是最终要渲染的内容
@@ -252,8 +253,22 @@
         // }
         // render(h(VueComponent), app);
 
-        
-
+        // 9. 组件props和attrs实现
+        // 属性为 props + attrs(非响应式)
+        // 所有属性 减去 props 等于 attrs
+        const VueComponent = {
+            props: {  // defineProps
+                name: String,
+                age: Number
+            },
+            render(proxy) { 
+                return h('div', [
+                    h(Text, 'Hello Bilibili' + proxy.attrs.name),
+                    h('p', proxy.attrs.age)
+                ]);
+            }
+        }
+        render(h(VueComponent, {a: 1, b: 2, name: "Bilibili", age: 30}), app);
 
     </script>
 </body>
