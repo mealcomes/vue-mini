@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import {
+            // createRenderer,
+            // render,
+            // h
+        } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+
+        /**
+         * 1. createRenderer 我们可以自己创建渲染器 （开发者自己提供渲染方法）
+         * 2. render 用内置的渲染器进行渲染（渲染dom元素）
+         * 3. h 函数可以创建一个虚拟dom 
+         * */
+
+        // let ele = h('h1', 'Vue Bilibili')
+        // // 方式1 使用内置渲染器
+        // render(ele, app);
+        // // 方式2 自定义渲染器
+        // const renderer = createRenderer({
+        //     createElement(type) {
+        //         console.log(type);
+        //         return document.createElement(type);
+        //     },
+        //     setElementText(el, text) {
+        //         el.textContent = text;
+        //     },
+        //     insert(child, parent, anchor) {
+        //         parent.appendChild(child);
+        //     }
+        // });
+        // renderer.render(ele, app);
+
+        // runtime-dom 主要作用是提供DOM API (提供一系列dom操作的api函数)
+        // @vue/runtime-dom()  -->  @vue/runtime-core(平台无关)  -->  @vue/reactivity
+        import {
+            rendererOptions,
+            render,
+            h,
+            Text,
+            Fragment
+        } from './runtime-dom.js';
+
+        // // 使用自定义renderOptions进行渲染
+        // let ele = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //         backgroundColor: 'lightblue',
+        //         borderRadius: '10px',
+        //         padding: '10px',
+        //         width: '200px',
+        //         textAlign: 'center',
+        //         cursor: 'pointer',
+        //         margin: '20px auto'
+        //     },
+        //     onClick: () => {
+        //         alert('Hello Vue Bilibili');
+        //     }
+        // }, 'Vue Bilibili')
+        // const renderer = createRenderer(rendererOptions);
+        // renderer.render(ele, app);
+
+        // // runtime-dom#render进行渲染
+        // let ele1 = h('p', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        // }, [h('h1', 'Vue Bilibili'), h('p', 'Hello Vue Bilibili'), 'welcome to Vue Bilibili']);
+        // let ele2 = h('h1', {
+        //     style: {
+        //         color: 'blue',
+        //     },
+        // }, 'Vue Bilibili')
+        // render(ele1, app);
+
+        //**************diff***********************************
+
+        // // 1. 直接取消挂载
+        // let ele1 = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        // }, 'Vue Bilibili');
+        // setTimeout(() => {
+        //     render(null, app);
+        // }, 1000);
+
+        // // 2. 两次 vnode 不同(type 不同或 key 不同)
+        // let ele1 = h('div', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        //     key: 1
+        // }, 'Vue Bilibili');
+        // let ele2 = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        //     key: 1
+        // }, 'Vue Bilibili')
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(ele2, app);
+        // }, 1000);
+
+
+        // // 3. props 存在不同，dom复用，更新props
+        // let ele1 = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        // }, 'Vue Bilibili');
+        // let ele2 = h('h1', {
+        //     style: {
+        //         color: 'blue',
+        //     },
+        // }, 'Vue Bilibili')
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(ele2, app);
+        // }, 1000);
+
+        // // 4. 子节点不同(不全为数组)，使用部分diff算法
+        // let ele1 = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        // }, 'Vue Bilibili');
+        // let ele2 = h('h1', {
+        //     style: {
+        //         color: 'red',
+        //     },
+        // }, ['vue', h('p', 'Hello Vue Bilibili')])
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(ele2, app);
+        // }, 1000);
+
+        // // 5. 子节点不同(全为数组)，使用全量diff算法
+        // let ele1 = h('div',
+        //     {
+        //         class: 'container',
+        //         style: {
+        //             width: '50px',
+        //             textAlign: 'center',
+        //         }
+        //     },
+        //     [
+        //         h('p', { key: 'a' }, 'a'),
+        //         h('p', { key: 'b' }, 'b'),
+        //         h('p', { key: 'c' }, 'c'),
+        //         h('p', { key: 'd' }, 'd'),
+        //         h('p', { key: 'e', style: { color: 'red' } }, 'e'),
+        //         h('p', { key: 'Q' }, 'Q'),
+        //         h('p', { key: 'f' }, 'f'),
+        //         h('p', { key: 'g' }, 'g'),
+        //     ]);
+        // let ele2 = h('div',
+        //     {
+        //         class: 'container',
+        //         style: {
+        //             width: '50px',
+        //             textAlign: 'center',
+        //         }
+        //     },
+        //     [
+        //         h('p', { key: 'a' }, 'a'),
+        //         h('p', { key: 'b' }, 'b'),
+        //         h('p', { key: 'e', style: { color: 'blue' } }, 'e'),
+        //         h('p', { key: 'c' }, 'c'),
+        //         h('p', { key: 'd' }, 'd'),
+        //         h('p', { key: 'h' }, 'h'),
+        //         h('p', { key: 'f' }, 'f'),
+        //         h('p', { key: 'g' }, 'g'),
+        //     ]);
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(ele2, app);
+        // }, 1000);
+
+        // // 6. 文本类型节点
+        // let ele1 = h(Text, ['Bilibili', 'Hello']);
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(null, app);
+        // }, 1000);
+
+        // // 7. Fragment类型节点
+        // let ele1 = h(Fragment,
+        //     {
+        //         style: {
+        //             width: '50px',
+        //             textAlign: 'center',
+        //         }
+        //     },
+        //     [
+        //         h('div', 'hello'),
+        //         h('a', 'world'),
+        //     ]);
+        // let ele2 = h(Fragment,
+        //     {
+        //         style: {
+        //             width: '50px',
+        //             textAlign: 'center',
+        //         }
+        //     },
+        //     [
+        //         h('div', 'hello'),
+        //         h('a', 'Vue'),
+        //     ]);
+        // render(ele1, app);
+        // setTimeout(() => {
+        //     render(ele2, app);
+        //     render(null, app);
+        // }, 1000);
+
+        // // 8. 组件渲染
+        // // 组件两个虚拟节点组成 h(VueComponent) = vnode 产生的是组件内的虚拟节点
+        // // render 函数返回的h函数执行后获得的虚拟节点才是最终要渲染的内容(subTree)
+        // // 如下，VueComponent中的render函数返回的h函数得到的vnode(subTree)才是最终要渲染的内容
+        // const VueComponent = {
+        //     data() {
+        //         return {
+        //             name: "jw",
+        //             age: 30
+        //         }
+        //     },
+        //     render(proxy) { // 此处proxy传入的变为data函数返回的对象
+        //         // 如果一次性改了多次数据，那么由于每次改变都会重新改变，所以页面更新频率会成指数增长
+        //         // 因此需要进行批量更新，即使用异步更新组件
+        //         setTimeout(() => {
+        //             proxy.age++;
+        //             proxy.age++;
+        //             proxy.age++;
+        //             proxy.age++;
+        //         }, 1000)
+        //         return h('div', [
+        //             h(Text, 'Hello Bilibili'),
+        //             h('p', this.age)
+        //         ]);
+        //     }
+        // }
+        // render(h(VueComponent), app);
+
+        
+
+
+    </script>
+</body>
+
+</html>

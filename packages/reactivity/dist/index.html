@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import {
+            reactive,
+            effect,
+            ref,
+            toRef,
+            toRefs,
+            proxyRefs,
+            computed,
+            watch,
+            watchEffect
+        } from './reactivity.js'
+
+        // let obj = {
+        //     name: "jw",
+        //     age: 30,
+        //     flag: true,
+        //     address: {
+        //         city: '湖北省'
+        //     }
+        // }
+
+        // const state = reactive(obj);
+
+        // effect(() => {
+        //     app.innerHTML = `姓名:${state.name}`
+        // })
+        // effect(() => {
+        //     app.innerHTML = `姓名:${state.name} 年龄:${state.age}`
+        // })
+        // setTimeout(() => {
+        //     state.age++;
+        // }, 1000);
+
+        // const runner = effect(() => {
+        //     app.innerHTML = state.flag ? state.name: state.age;
+        // }, {
+        //     scheduler: () => {
+        //         console.log('数据更新了，不要重新渲染，走自己的逻辑');
+        //         runner();
+        //     }
+        // })
+
+        // effect(() => {
+        //     app.innerHTML = state.name;
+        //     state.name = Math.random();  // 如果在本次执行effect的时候更新了数据，则不会触发effect更新，见effect#triggerEffects
+        // })
+
+        // 多次更改时，会多次更新
+        // const state = reactive({
+        //     name: 'Bob'
+        // })
+        // effect(() => {
+        //     console.log('effect 执行');
+        //     app.innerHTML = state.name;
+        // })
+        // setTimeout(() => {
+        //     state.name = "Alice";
+        //     state.name = "Mike";
+        //     state.name = "LiHua";
+        // }, 1000)
+
+        // 深度响应
+        // effect(() => {
+        //     app.innerHTML = state.address.city;
+        // })
+
+        // ref初试
+        // const name = ref('Bob');
+        // console.log(name.value);
+        // effect(() => {
+        //     app.innerHTML = name.value || 'unknown';
+        // })
+
+        // toRef初试
+        // let stateName = toRef(state, 'name');
+        // console.log(stateName);
+
+        // toRefs初试
+        // let {name, age} = toRefs(state);
+        // console.log(name, age);
+
+        // toRefs初试
+        // let {name, age} = toRefs(state);
+        // console.log(name, age);
+
+        // proxyRefs初试
+        // let proxy = proxyRefs({...toRefs(state), a: 100})
+        // proxy.age = 100;   // proxy.age.value = 100
+        // proxy.a = 200;
+        // effect(() => {
+        //     console.log(proxy.name, proxy.age, proxy.a); // 相当于console.log(proxy.name.value, proxy.age.value, proxy.a)
+        // })
+
+        // computed初试
+        // const info = computed({
+        //     get(oldValue) {
+        //         console.log('计算属性执行');
+        //         return `name: ${state.name}, age: ${state.age}`;
+        //     },
+        //     set(value) {
+        //         console.log(value);     // info.value = 'xxx'时进入该set函数
+        //     }
+        // });
+        // effect(() => {
+        //     console.log(info);
+        //     console.log(info.value);
+        //     // 多次取值只会computed函数只会执行一次（第一次dirty = true，执行后dirty为false）
+        //     // 计算属性内部发生改变则dirty重新赋值为true
+        //     console.log(info.value);
+        //     app.innerHTML = info.value
+        // });
+
+        // watch初试
+        // const unwatch = watch(state.address, (oldVal, newVal) => {
+        //     console.log(oldVal, newVal);
+        // }, {
+        //     immediate: true,
+        //     deep: true
+        // })
+        // unwatch()
+        // setTimeout(() => {
+        //     state.address.city = '湖南省';
+        //     state.name = 'Mike'
+        //     state.age = 66
+        // }, 1000)
+
+        // // watch clearup演示
+        // const val = ref("null")
+        // let timer = 3000;
+        // function getData(timeout) {
+        //     console.log(timeout, '开始请求');
+        //     return new Promise((resolve, reject) => {
+        //         setTimeout(() => {
+        //             console.log(timeout + ' 请求完毕');
+        //             resolve(timeout + ' 数据加载完毕')
+        //         }, timeout);
+        //     })
+        // }
+
+        // ********************原本可能的解决方式**************************
+        // let queue = [];
+        // watch(val, async (newVal, oldVal) => {
+        //     console.log('oldVal:', oldVal, 'newVal:', newVal);
+        //     let flag = true;
+        //     // 最新的一次请求开始，先将之前的请求flag变为false，这样之前的请求结果便会作废
+        //     for (let fn of queue) {
+        //         fn();
+        //     }
+        //     queue.push(() => flag = false);
+        //     let r = await getData(timer);
+        //     if (flag) {
+        //         app.innerHTML = r;
+        //     }
+        // })
+
+        // ********************使用cleanup**************************
+        // watch(val, async (newVal, oldVal, onCleanup) => {
+        //     console.log('oldVal:', oldVal, 'newVal:', newVal);
+        //     let flag = true;
+        //     onCleanup(() => {
+        //         flag = false;
+        //     });
+        //     let r = await getData(timer);
+        //     if (flag) {
+        //         app.innerHTML = r;
+        //     }
+        // })
+
+        // setTimeout(() => {
+        //     val.value = "b";
+        //     timer -= 1000;
+        //     val.value = "a";
+        // }, 1000);
+
+
+        // watchEffect 初试
+        // watchEffect(() => {
+        //     console.log(state.name, state.age);
+        // }, {deep: false})
+
+
+
+    </script>
+</body>
+
+</html>

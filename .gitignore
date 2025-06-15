@@ -1,4 +1,5 @@
-dist
+**/dist/**/*.js
+**/dist/**/*.map
 .DS_Store
 node_modules
 *.log
