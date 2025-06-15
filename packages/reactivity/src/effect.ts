@@ -40,7 +40,7 @@ export class ReactiveEffect {
         preCleanEffect(this);
 
         /**
-         *  该操作是为了解决下面的场景出现的
+         *  该操作是为了解决下面的场景出现的问题
          *  ```
          *  const obj = reactive({age: 11, name: 'Bob'});
          *  effect(() => {
@@ -51,6 +51,7 @@ export class ReactiveEffect {
          *      console.log(obj.name);
          *  })
          * ```
+         * 在内部effect执行期间，需要将外部的effect存起来
          */
         let preEffect = activeEffect;
 
@@ -92,7 +93,7 @@ export function effect<T = any>(fn: Function, options?: Object)
     });
 
     if (options) {
-        Object.assign(_effect, options);  // 用用户传递的覆盖内置的
+        Object.assign(_effect, options);  // 用用户传递的覆盖内置的，例如schedule、stop
     }
     _effect.run();
 
