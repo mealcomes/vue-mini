@@ -2,6 +2,7 @@ import { ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
 import { reactive, ReactiveEffect } from "@vue/reactivity";
+import { queueJob } from "./scheduler";
 
 
 /*
@@ -103,11 +104,11 @@ export function createRenderer(options) {
                 patch(instance.subTree, subTree, container, anchor);
                 instance.subTree = subTree
             }
-
         }
 
         // 将组件更新函数变为ReactiveEffect，从而达到数据更新，派发组件的更新
-        const effect = new ReactiveEffect(componentUpdateFn, () => update());
+        const effect = new ReactiveEffect(componentUpdateFn, 
+            () => queueJob(update));  // 异步更新组件，避免一次更改多个数据导致组件频繁更新
 
         const update = (instance.update = () => effect.run());
 
