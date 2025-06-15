@@ -1,6 +1,7 @@
 import { ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
+import { reactive, ReactiveEffect } from "@vue/reactivity";
 
 
 /*
@@ -37,6 +38,82 @@ export function createRenderer(options) {
         }
     }
 
+    const mountElement = (vnode, container, anchor) => {
+        const { type, props, shapeFlag, children } = vnode;
+
+        // 第一次渲染时，让 vnode.el 指向真实的 DOM 元素
+        let el = (vnode.el = hostCreateElement(type));
+
+        // 属性设置 
+        // {
+        //     style: {
+        //         color: 'red',
+        //     },
+        //     class: 'container',
+        // }
+        if (props) {
+            for (const key in props) {
+                hostPatchProp(el, key, null, props[key]);
+            }
+        }
+
+        // 处理文本类型的子节点
+        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+            hostSetElementText(el, vnode.children);
+        }
+        // 处理数组类型的子节点
+        else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            mountChildren(vnode.children, el);
+        }
+
+        hostInsert(el, container, anchor);
+    }
+
+    // 结合index.html#8
+    const mountComponent = (vnode, container, anchor,) => {
+        // 组件可以基于自己的状态重新渲染 (effect)
+        const { data = () => { }, render } = vnode.type;
+
+        // 拿到数据并编程响应式
+        const state = reactive(data());
+
+        const instance = {
+            state,                 // 状态
+            vnode,                 // 组件的虚拟节点
+            subTree: null,         // 子树
+            isMounted: false,      // 是否挂载完成
+            update: null           // 组件的更新函数
+        }
+
+        // 组件更新函数
+        const componentUpdateFn = () => {
+            // call(state, state)
+            // 前一个参数是绑定this(因为组件render函数里面会用到this)
+            // 后一个参数是将state作为参数传给render函数
+            // render函数需要返回vnode(执行h函数得到的结果)
+
+            const subTree = render.call(state, state);
+            if (!instance.isMounted) {
+                patch(null, subTree, container, anchor);
+                instance.subTree = subTree;
+                instance.isMounted = true;
+            }
+            else {
+                // 基于状态的组件更新
+                patch(instance.subTree, subTree, container, anchor);
+                instance.subTree = subTree
+            }
+
+        }
+
+        // 将组件更新函数变为ReactiveEffect，从而达到数据更新，派发组件的更新
+        const effect = new ReactiveEffect(componentUpdateFn, () => update());
+
+        const update = (instance.update = () => effect.run());
+
+        update();
+    }
+
     const processText = (n1, n2, container, anchor) => {
         if (n1 == null) {
             hostInsert(
@@ -71,35 +148,17 @@ export function createRenderer(options) {
         }
     }
 
-    const mountElement = (vnode, container, anchor) => {
-        const { type, props, shapeFlag, children } = vnode;
-
-        // 第一次渲染时，让 vnode.el 指向真实的 DOM 元素
-        let el = (vnode.el = hostCreateElement(type));
-
-        // 属性设置 
-        // {
-        //     style: {
-        //         color: 'red',
-        //     },
-        //     class: 'container',
-        // }
-        if (props) {
-            for (const key in props) {
-                hostPatchProp(el, key, null, props[key]);
-            }
+    const processComponent = (n1, n2, container, anchor) => {
+        if (n1 == null) {
+            // 组件渲染
+            mountComponent(
+                n2,
+                container,
+                anchor,
+            )
+        } else {
+            // 组件更新
         }
-
-        // 处理文本类型的子节点
-        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-            hostSetElementText(el, vnode.children);
-        }
-        // 处理数组类型的子节点
-        else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-            mountChildren(vnode.children, el);
-        }
-
-        hostInsert(el, container, anchor);
     }
 
     const patchProp = (oldProps, newProps, el) => {
@@ -399,7 +458,7 @@ export function createRenderer(options) {
             n1 = null;
         }
 
-        const { type } = n2;
+        const { type, shapeFlag } = n2;
         switch (type) {
             // 文本节点
             // 例如 <div>hello</div> 中的 hello
@@ -410,7 +469,13 @@ export function createRenderer(options) {
                 processFragment(n1, n2, container, anchor);
                 break;
             default:
-                processElement(n1, n2, container, anchor);
+                if (shapeFlag & ShapeFlags.ELEMENT) {
+                    processElement(n1, n2, container, anchor);
+                } else if (shapeFlag & ShapeFlags.COMPONENT) {
+                    // 对组件处理
+                    processComponent(n1, n2, container, anchor);
+                }
+
                 break;
         }
     }
@@ -446,6 +511,7 @@ export function createRenderer(options) {
 
         container._vnode = vnode
     }
+
     return {
         render,
     };
