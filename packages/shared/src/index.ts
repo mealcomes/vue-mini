@@ -20,3 +20,6 @@ export const isMap = (val: unknown): val is Map<any, any> =>
 export const isPlainObject = (val: unknown): val is object =>
     Object.prototype.toString.call(val) === '[object Object]'
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
+
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+export const hasOwn = (value, key) => hasOwnProperty.call(value, key)

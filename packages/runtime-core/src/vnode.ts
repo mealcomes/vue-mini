@@ -1,4 +1,4 @@
-import { isArray, isObject, isString, ShapeFlags } from "@vue/shared";
+import { isArray, isFunction, isObject, isString, ShapeFlags } from "@vue/shared";
 
 export const Text: unique symbol = Symbol.for('v-txt');
 export const Fragment = Symbol.for('v-fgt');
@@ -15,8 +15,10 @@ export function createVNode(type, props = null, children = null) {
     const shapeFlag = isString(type)
         ? ShapeFlags.ELEMENT             // 元素
         : isObject(type)
-        ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件
-        : 0;
+            ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件
+            : isFunction(type)
+                ? ShapeFlags.FUNCTIONAL_COMPONENT  // 函数式组件 (setup)
+                : 0
     const vnode = {
         __v_isVNode: true,
         type,

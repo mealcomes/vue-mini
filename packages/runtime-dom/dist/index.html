@@ -261,14 +261,16 @@
                 name: String,
                 age: Number
             },
-            render(proxy) { 
+            render(proxy) {
+                console.log('proxy: ', proxy);
                 return h('div', [
-                    h(Text, 'Hello Bilibili' + proxy.attrs.name),
-                    h('p', proxy.attrs.age)
+                    h(Text, 'Hello ' + proxy.name),
+                    h('p', proxy.age),
+                    h('button', { onClick: () => { proxy.age++; } }, ['点我'])
                 ]);
             }
         }
-        render(h(VueComponent, {a: 1, b: 2, name: "Bilibili", age: 30}), app);
+        render(h(VueComponent, { a: 1, b: 2, name: "Bilibili", age: 30 }), app);
 
     </script>
 </body>

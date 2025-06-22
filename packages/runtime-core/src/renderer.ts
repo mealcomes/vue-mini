@@ -3,7 +3,7 @@ import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
 import { ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
-import { createComponentInstance, setupComponent } from "packages/reactivity/src/component";
+import { createComponentInstance, setupComponent } from "./component";
 
 
 /*
@@ -78,19 +78,25 @@ export function createRenderer(options) {
         // 初始化instance.props和instance.attrs
         setupComponent(instance);
 
+        // 组件与数据绑定
         setupRenderEffect(instance, vnode, container, anchor);
     }
 
     // 将组件更新和响应式数据进行绑定
     const setupRenderEffect = (instance, vnode, container, anchor,) => {
+        const {render} = instance;
+        console.log(instance);
+
         // 组件更新函数
         const componentUpdateFn = () => {
             // call(instance.state, instance.state)
             // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
             // 后一个参数是将state作为参数传给组件对象的render函数
             // render函数需要返回vnode(执行h函数得到的结果)
-
-            const subTree = vnode.type.render.call(instance.state, instance.state);
+            const subTree = normalizeVNode(
+                render.call(instance.proxy, instance.proxy)
+            );
+            
             if (!instance.isMounted) {
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;

@@ -23,7 +23,7 @@ h(Component, {}, {}) // named slots
 h(Component, null, {})
 **/
 
-import { isArray, isObject, isString, ShapeFlags } from "@vue/shared";
+import { isArray, isObject } from "@vue/shared";
 import { createVNode, isVNode } from "./vnode";
 
 export function h(type, propsOrChildren, children) {
