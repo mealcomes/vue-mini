@@ -188,7 +188,9 @@
         //     render(ele2, app);
         // }, 1000);
 
-        // // 6. 文本类型节点
+        // *****************************************************
+
+        // // 文本类型节点渲染
         // let ele1 = h(Text, ['Bilibili', 'Hello']);
         // render(ele1, app);
         // setTimeout(() => {
@@ -224,7 +226,7 @@
         //     render(null, app);
         // }, 1000);
 
-        // // 8. 组件渲染
+        // // 组件渲染
         // // template ==> render
         // // 组件两个虚拟节点组成 h(VueComponent) = vnode 产生的是组件内的虚拟节点
         // // render 函数返回的h函数执行后获得的虚拟节点才是最终要渲染的内容(subTree)
@@ -238,7 +240,7 @@
         //     },
         //     render(proxy) { // 此处proxy传入的变为data函数返回的对象
         //         // 如果一次性改了多次数据，那么由于每次改变都会重新改变，所以页面更新频率会成指数增长
-        //         // 因此需要进行批量更新，即使用异步更新组件
+        //         // 因此需要进行批量更新，即使用异步更新组件，见 renderer#setupRenderEffect
         //         setTimeout(() => {
         //             proxy.age++;
         //             proxy.age++;
