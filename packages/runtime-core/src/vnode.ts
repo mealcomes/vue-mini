@@ -22,7 +22,7 @@ export function createVNode(type, props = null, children = null) {
     const vnode = {
         __v_isVNode: true,
         type,
-        props,
+        props,               // h 函数参数传入得到的，区别于组件实例的props
         children,
         key: props?.key,
         el: null,
