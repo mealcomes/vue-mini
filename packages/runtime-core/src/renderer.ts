@@ -4,6 +4,7 @@ import { Text } from "./vnode";
 import { ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
 import { createComponentInstance, setupComponent } from "./component";
+import { shouldUpdateComponent, updateProps } from "./componentProps";
 
 
 /*
@@ -84,7 +85,7 @@ export function createRenderer(options) {
 
     // 将组件的渲染和响应式数据进行绑定
     const setupRenderEffect = (instance, vnode, container, anchor,) => {
-        const {render} = instance;
+        const { render } = instance;
 
         // 组件更新函数
         const componentUpdateFn = () => {
@@ -94,9 +95,9 @@ export function createRenderer(options) {
             // render函数需要返回vnode(执行h函数得到的结果)
             const subTree = normalizeVNode(
                 // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
-                render.call(instance.proxy, instance.proxy) 
+                render.call(instance.proxy, instance.proxy)
             );
-            
+
             if (!instance.isMounted) {
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
@@ -162,7 +163,32 @@ export function createRenderer(options) {
             )
         } else {
             // 组件更新
+            updateComponent(n1, n2);
         }
+    }
+
+    const updateComponent = (n1, n2) => {
+        // 组件实例复用是复用component(subTree)即复用的是dom(元素复用的是el)
+        const instance = (n2.component = n1.component);
+        if (shouldUpdateComponent(n1, n2)) {
+            updateComponentPreRender(instance, n2);
+        }
+        else {
+            // TODO 注释
+            n2.el = n1.el;
+            instance.vnode = n2;
+        }
+    }
+
+    const updateComponentPreRender = (
+        instance, // prevVNode.instance
+        nextVNode
+    ) => {
+        nextVNode.component = instance;  // 组件实例复用
+        const prevProps = instance.vnode.props;  // 拿到旧的vnode的props，注意不是旧的组件的props
+        instance.vnode = nextVNode;
+        instance.next = null;
+        updateProps(instance, nextVNode.props, prevProps);
     }
 
     const patchProp = (oldProps, newProps, el) => {

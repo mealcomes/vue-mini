@@ -1,5 +1,5 @@
 import { ShapeFlags } from "@vue/shared";
-import { initProps } from "../../reactivity/src/componentProps"
+import { initProps } from "./componentProps"
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { applyOptions } from "./componentOptions";
 
