@@ -197,7 +197,7 @@
         //     render(null, app);
         // }, 1000);
 
-        // // 7. Fragment类型节点
+        // // Fragment类型节点渲染
         // let ele1 = h(Fragment,
         //     {
         //         style: {
@@ -255,9 +255,11 @@
         // }
         // render(h(VueComponent), app);
 
-        // 9. 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
-        // 属性为 props + attrs(非响应式) 即 h 函数传入的参数
-        // 所有属性 减去 props 等于 attrs
+        // // 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
+        // // 属性为 props + attrs(非响应式),其为 h 函数传入的参数
+        // // 但由于类似<el-button class='button' type='text'/>的操作，我们传入了class和type两个属性
+        // // 但最终type会变为el-button组件的props，class会变成el-button组件中button的标签属性attrs
+        // // 故所有通过h函数传入的属性除去props后等于attrs
         const VueComponent = {
             props: {  // defineProps
                 name: String,
