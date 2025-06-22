@@ -82,7 +82,7 @@ export function createRenderer(options) {
         setupRenderEffect(instance, vnode, container, anchor);
     }
 
-    // 将组件更新和响应式数据进行绑定
+    // 将组件的渲染和响应式数据进行绑定
     const setupRenderEffect = (instance, vnode, container, anchor,) => {
         const {render} = instance;
 
@@ -93,7 +93,8 @@ export function createRenderer(options) {
             // 后一个参数是将state作为参数传给组件对象的render函数
             // render函数需要返回vnode(执行h函数得到的结果)
             const subTree = normalizeVNode(
-                render.call(instance.proxy, instance.proxy)
+                // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
+                render.call(instance.proxy, instance.proxy) 
             );
             
             if (!instance.isMounted) {

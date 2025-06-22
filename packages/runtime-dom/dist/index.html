@@ -253,7 +253,7 @@
         // }
         // render(h(VueComponent), app);
 
-        // 9. 组件props和attrs实现
+        // 9. 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
         // 属性为 props + attrs(非响应式) 即 h 函数传入的参数
         // 所有属性 减去 props 等于 attrs
         const VueComponent = {
@@ -261,11 +261,13 @@
                 name: String,
                 age: Number
             },
+            // data 函数会在 ComponentOption#applyOption 中被执行并转为响应式数据
             data: () => {
                 return {
                     count: 10
                 }
             },
+            // rendered#setupRenderEffect 中调用该函数，并将结果转为虚拟节点进行渲染
             render(proxy) {
                 console.log('proxy: ', proxy);
                 return h('div', [
