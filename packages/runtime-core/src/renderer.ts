@@ -85,7 +85,6 @@ export function createRenderer(options) {
     // 将组件更新和响应式数据进行绑定
     const setupRenderEffect = (instance, vnode, container, anchor,) => {
         const {render} = instance;
-        console.log(instance);
 
         // 组件更新函数
         const componentUpdateFn = () => {

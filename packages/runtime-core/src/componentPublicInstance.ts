@@ -22,10 +22,10 @@ export const PublicInstanceProxyHandlers = {
 
     },
     set(instance, key, value) {
-        const { state, props } = instance;
+        const { data, props } = instance;
 
-        if (state && hasOwn(state, key)) {
-            return state[key] = value;
+        if (data && hasOwn(data, key)) {
+            return data[key] = value;
         }
         else if (props && hasOwn(props, key)) {
             // 用户可以修改props，但是破坏了单向数据流

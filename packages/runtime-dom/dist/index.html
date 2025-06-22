@@ -261,12 +261,17 @@
                 name: String,
                 age: Number
             },
+            data: () => {
+                return {
+                    count: 10
+                }
+            },
             render(proxy) {
                 console.log('proxy: ', proxy);
                 return h('div', [
                     h(Text, 'Hello ' + proxy.name),
-                    h('p', proxy.age),
-                    h('button', { onClick: () => { proxy.age++; } }, ['点我'])
+                    h('p', ['count: ', proxy.count]),
+                    h('button', { onClick: () => { proxy.count++; } }, ['点我'])
                 ]);
             }
         }
