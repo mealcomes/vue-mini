@@ -70,7 +70,11 @@ function setupStatefulComponent(instance) {
 
 function finishComponentSetup(instance) {
     const Component = instance.type;
-    applyOptions(instance);
+    try {
+        applyOptions(instance)
+    } catch(e) {
+        console.error(e)
+    }
 
     // type 中的render 赋值给 instance
     instance.render = (Component.render || (() => { }))
