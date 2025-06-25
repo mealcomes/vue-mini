@@ -25,12 +25,12 @@ export const PublicInstanceProxyHandlers = {
         const { data, props } = instance;
 
         if (data && hasOwn(data, key)) {
-            return data[key] = value;
+            data[key] = value;
         }
         else if (props && hasOwn(props, key)) {
             // 用户可以修改props，但是破坏了单向数据流
             console.warn(`Attempting to mutate prop "${String(key)}". Props are readonly.`)
-            return props[key] = value;
+            props[key] = value;
         }
         return true;
     }

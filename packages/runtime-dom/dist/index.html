@@ -255,11 +255,11 @@
         // }
         // render(h(VueComponent), app);
 
-        // // // 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
-        // // // 属性为 props + attrs(非响应式),其为 h 函数传入的参数
-        // // // 但由于类似<el-button class='button' type='text'/>的操作，我们传入了class和type两个属性
-        // // // 但最终type会变为el-button组件的props，class会变成el-button组件中button的标签属性attrs
-        // // // 故所有通过h函数传入的属性除去props后等于attrs
+        // // 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
+        // // 属性为 props + attrs(非响应式),其为 h 函数传入的参数
+        // // 但由于类似<el-button class='button' type='text'/>的操作，我们传入了class和type两个属性
+        // // 但最终type会变为el-button组件的props，class会变成el-button组件中button的标签属性attrs
+        // // 故所有通过h函数传入的属性除去props后等于attrs
         // const VueComponent = {
         //     props: {  // defineProps
         //         name: String,
@@ -284,7 +284,7 @@
         // render(h(VueComponent, { a: 1, b: 2, name: "Bilibili", age: 30 }), app);
 
         // 组件更新
-        // 有三种方式: 状态、属性(props)、插槽(slots)
+        // 有三种方式: 状态(setup里面定义的ref、reactive)、属性(props)、插槽(slots)
         const RenderComponent = {
             props: {
                 name: String
@@ -316,6 +316,7 @@
             }
         }
         render(h(VueComponent), app);
+
 
     </script>
 </body>

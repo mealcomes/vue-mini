@@ -93,17 +93,28 @@ export function createRenderer(options) {
             // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
             // 后一个参数是将state作为参数传给组件对象的render函数
             // render函数需要返回vnode(执行h函数得到的结果)
-            const subTree = normalizeVNode(
-                // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
-                render.call(instance.proxy, instance.proxy)
-            );
 
             if (!instance.isMounted) {
+                // call(instance.state, instance.state)
+                // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
+                // 后一个参数是将state作为参数传给组件对象的render函数
+                // render函数需要返回vnode(执行h函数得到的结果)
+                const subTree = normalizeVNode(
+                    // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
+                    render.call(instance.proxy, instance.proxy)
+                );
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
                 instance.isMounted = true;
             }
             else {
+                const { next } = instance;
+                if (next) {
+                    // 更新属性和插槽 见本文件createRenderer中的updateComponent函数
+                    updateComponentPreRender(instance, next);
+                }
+                const subTree = normalizeVNode(render.call(instance.proxy, instance.proxy));
+
                 // 基于状态的组件更新
                 patch(instance.subTree, subTree, container, anchor);
                 instance.subTree = subTree
@@ -171,7 +182,18 @@ export function createRenderer(options) {
         // 组件实例复用是复用component(subTree)即复用的是dom(元素复用的是el)
         const instance = (n2.component = n1.component);
         if (shouldUpdateComponent(n1, n2)) {
-            updateComponentPreRender(instance, n2);
+            if (
+                instance.asyncDep &&
+                !instance.asyncResolved
+            ) {
+                // TODO 异步组件
+                updateComponentPreRender(instance, n2);
+            }
+            else {
+                // 普通组件更新
+                instance.next = n2;  // 将新的vnode赋值给instance.next
+                instance.update();    // 调用组件的更新函数，见本文件createRenderer中的setupRenderEffect函数
+            }
         }
         else {
             // TODO 注释
@@ -180,14 +202,15 @@ export function createRenderer(options) {
         }
     }
 
+    // 复用虚拟节点(需要将新的VNode的component指向旧的)，更新虚拟节点props
     const updateComponentPreRender = (
         instance, // prevVNode.instance
         nextVNode
     ) => {
-        nextVNode.component = instance;  // 组件实例复用
+        nextVNode.component = instance;  // 新VNode的实例变为旧的instance
         const prevProps = instance.vnode.props;  // 拿到旧的vnode的props，注意不是旧的组件的props
-        instance.vnode = nextVNode;
-        instance.next = null;
+        instance.vnode = nextVNode;   // 进行虚拟节点复用
+        instance.next = null;  //清空next
         updateProps(instance, nextVNode.props, prevProps);
     }
 

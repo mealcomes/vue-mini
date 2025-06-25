@@ -23,6 +23,17 @@ export function initProps(instance, rawProps) {
 
 export function updateProps(instance, rawProps, rawPrevProps) {
 
+    for (let key in rawProps) {
+        // 如果新props中有旧props中没有的，则直接覆盖
+        instance.props[key] = rawProps[key];
+    }
+
+    for (let key in instance.props) {
+        // 如果旧props中有新props中没有的，则删除
+        if (!(key in rawProps)) {
+            delete instance.props[key];
+        }
+    }
 }
 
 // 判断两个Vnode的Props(区别于组件实例的props)是否发生变化
@@ -41,7 +52,13 @@ function hasPropsChanged(prevProps, nextProps) {
 }
 
 export function shouldUpdateComponent(prevVNode, nextVNode) {
-    const { props: prevProps, children: prevChildren, component } = prevVNode;
-    const { props: nextProps, children: nextChildren, patchFlag } = nextVNode;
+    const { props: prevProps, children: prevChildren } = prevVNode;
+    const { props: nextProps, children: nextChildren } = nextVNode;
+
+    // 如果有插槽，则需要进行渲染
+    if (prevChildren || nextChildren) return true;
+    
+    if (prevProps === nextProps) return false;
+
     return hasPropsChanged(prevProps, nextProps);
 }
