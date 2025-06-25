@@ -322,7 +322,7 @@
         // // `setup`函数可以返回`render`函数(返回的是`render`函数)
         // // `setup`函数如果返回的是对象，则会作为组件的状态
         // const VueComponent = {
-        //     setup(props, { emit, attrs, expose, slots }) {
+        //     setup(props, { emit, attrs, expose, slots }) {  // setup 才有 { emit, attrs, expose, slots }
         //         // 提供渲染逻辑
         //         const a = ref('Bilibili');
         //         setTimeout(() => {
@@ -342,29 +342,46 @@
         // }
         // render(h(VueComponent), app);
 
-        // 插槽实现
-        const RenderComponent = {
-            render(proxy) {
-                console.log(proxy);
-                return h(Fragment, [
-                    proxy.$slots.header('Hello header'),
-                    proxy.$slots.footer('Hello footer'),
-                ]);
-            }
-        };
+        // // 插槽实现
+        // const RenderComponent = {
+        //     render(proxy) {
+        //         console.log(proxy);
+        //         return h(Fragment, [
+        //             proxy.$slots.header('Hello header'),
+        //             proxy.$slots.footer('Hello footer'),
+        //         ]);
+        //     }
+        // };
+        // const VueComponent = {
+        //     setup(props, { emit, attrs, expose, slots }) {
+        //         return (proxy) => {
+        //             return h(RenderComponent, null, {    // 此处第二个参数应该传递null，见 Commit 93d6126
+        //                 default: (content) => h('default', '我是默认值, 我的内容是：' + content),
+        //                 header: (content) => h('header', '我来组成头部, 我的内容是：' + content),
+        //                 footer: (content) => h('footer', '我来组成脚部, 我的内容是：' + content),
+        //             })
+        //         }
+        //     },
+        // }
+        // render(h(VueComponent), app);
+
+        // emit实现
         const VueComponent = {
             setup(props, { emit, attrs, expose, slots }) {
                 return (proxy) => {
-                    return h(RenderComponent, null, {    // 此处第二个参数应该传递null，见 Commit 93d6126
-                        default: (content) => h('default', '我是默认值, 我的内容是：' + content),
-                        header: (content) => h('header', '我来组成头部, 我的内容是：' + content),
-                        footer: (content) => h('footer', '我来组成脚部, 我的内容是：' + content),
+                    // 在实例上暴露属性
+                    expose({
+                        age: 20
                     })
+                    return h('button', {
+                        onClick: () => emit('myEvent', 'Vue')
+                    }, '点我');
                 }
             },
         }
-        render(h(VueComponent), app);
-
+        render(h(VueComponent, {
+            onMyEvent: (value) => alert('My event is trig!\n value: ' + value)
+        }), app);
 
     </script>
 </body>

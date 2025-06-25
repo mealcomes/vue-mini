@@ -36,7 +36,8 @@ export function createComponentInstance(
         propsOptions,          // 组件的props，其为defineProps
         component: null,
         proxy: null,           // 用来代理 props attrs data 方便访问
-        setupState: {},
+        setupState: {},        // setup函数返回的对象
+        exposed: null,
     }
 
     return instance
@@ -66,8 +67,20 @@ function setupStatefulComponent(instance) {
     const { setup } = Component;
     if (setup) {
         const setupContext = {
-
+            slots: instance.slots,
+            attrs: instance.attrs,
+            // 通过合成eventName，再找到父组件onEventName属性对应的函数并对其进行调用
+            emit(event: string, ...args) {  
+                const eventName = `on${event[0].toUpperCase() + event.slice(1)}`;
+                const handler = instance.vnode.props[eventName];
+                handler && handler(...args);
+            },
+            // 在 instance 上添加对象
+            expose(value) {
+                instance.exposed = value;
+            },
         }
+        // 传入 setupContext， 见index.html中使用的setup传入的参数
         const setupResult = setup(instance.props, setupContext);
         handleSetupResult(instance, setupResult);
     }
