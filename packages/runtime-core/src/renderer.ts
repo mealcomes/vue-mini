@@ -1,5 +1,5 @@
 import { ShapeFlags } from "@vue/shared";
-import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
+import { Fragment, isSameVNodeType, mergeProps, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
 import { ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
@@ -103,6 +103,14 @@ export function createRenderer(options) {
                     // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
                     render.call(instance.proxy, instance.proxy)
                 );
+
+                // 简单处理父组件向子组件通过h函数参数传递的属性
+                const extraProps = instance.attrs;
+                if (extraProps) {
+                    const mergedProps = mergeProps(subTree.props || {}, extraProps);
+                    subTree.props = mergedProps;
+                }
+
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
                 instance.isMounted = true;
