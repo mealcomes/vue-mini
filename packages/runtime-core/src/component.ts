@@ -3,6 +3,7 @@ import { initProps } from "./componentProps"
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { applyOptions } from "./componentOptions";
 import { proxyRefs } from "@vue/reactivity";
+import { initSlots } from "./componentSlots";
 
 export function isStatefulComponent(
     instance,
@@ -31,6 +32,7 @@ export function createComponentInstance(
         update: null,          // 组件的更新函数
         props: {},             // API defineProps的那个props
         attrs: {},             // propsOptions - props = attrs
+        slots: {},             // 插槽
         propsOptions,          // 组件的props，其为defineProps
         component: null,
         proxy: null,           // 用来代理 props attrs data 方便访问
@@ -44,11 +46,12 @@ export function createComponentInstance(
 export function setupComponent(
     instance,
 ) {
-    const { props } = instance.vnode;
+    const { props, children } = instance.vnode;
     const isStateful = isStatefulComponent(instance);
 
     // 根据 h函数传入的props 区分出 组件的props(defineProps)和attrs
-    initProps(instance, props)
+    initProps(instance, props);
+    initSlots(instance, children);
 
     if (isStateful) {
         setupStatefulComponent(instance);

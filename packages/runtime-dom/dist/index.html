@@ -318,31 +318,50 @@
         // }
         // render(h(VueComponent), app);
 
-        // `setup`函数，每个组件都只会执行一次，可以放入我们的`compositionAPI`
-        // `setup`函数可以返回`render`函数(返回的是`render`函数)
-        // `setup`函数如果返回的是对象，则会作为组件的状态
+        // // `setup`函数，每个组件都只会执行一次，可以放入我们的`compositionAPI`
+        // // `setup`函数可以返回`render`函数(返回的是`render`函数)
+        // // `setup`函数如果返回的是对象，则会作为组件的状态
+        // const VueComponent = {
+        //     setup(props, { emit, attrs, expose, slots }) {
+        //         // 提供渲染逻辑
+        //         const a = ref('Bilibili');
+        //         setTimeout(() => {
+        //             a.value = 'Vue';
+        //         }, 1000);
+        //         return () => {
+        //             return h("div", 'hello ' + a.value);
+        //         }
+        //         // 返回对象的话，需要下面被注释的render函数
+        //         // return {
+        //         //     a: a
+        //         // }
+        //     },
+        //     // render(proxy) {
+        //     //     return h('div', 'hello ' + proxy.a);
+        //     // }
+        // }
+        // render(h(VueComponent), app);
+
+        // 插槽实现
+        const RenderComponent = {
+            render(proxy) {
+                console.log(proxy);
+                return h(Fragment, [
+                    proxy.$slots.header('Hello header'),
+                    proxy.$slots.footer('Hello footer'),
+                ]);
+            }
+        };
         const VueComponent = {
             setup(props, { emit, attrs, expose, slots }) {
-                // 提供渲染逻辑
-
-                const a = ref('Bilibili');
-                setTimeout(() => {
-                    a.value = 'Vue';
-                }, 1000);
-
-                return () => {
-                    
-                    return h("div", 'hello ' + a.value);
+                return (proxy) => {
+                    return h(RenderComponent, null, {    // 此处第二个参数应该传递null，见 Commit 93d6126
+                        default: (content) => h('default', '我是默认值, 我的内容是：' + content),
+                        header: (content) => h('header', '我来组成头部, 我的内容是：' + content),
+                        footer: (content) => h('footer', '我来组成脚部, 我的内容是：' + content),
+                    })
                 }
-
-                // 返回对象的话，需要下面被注释的render函数
-                // return {
-                //     a: a
-                // }
             },
-            // render(proxy) {
-            //     return h('div', 'hello ' + proxy.a);
-            // }
         }
         render(h(VueComponent), app);
 

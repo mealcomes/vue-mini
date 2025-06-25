@@ -2,6 +2,7 @@ import { hasOwn } from "@vue/shared";
 
 const publicProperty = {
     $attrs: (instance) => instance.attrs,
+    $slots: (instance) => instance.slots,
 }
 
 export const PublicInstanceProxyHandlers = {

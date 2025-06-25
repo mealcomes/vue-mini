@@ -33,6 +33,10 @@ export function createVNode(type, props = null, children = null) {
         if (isArray(children)) {
             vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
         }
+        else if (isObject(children)) {
+            // h 函数第三个参数是对象，则代表其为slots
+            vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN;
+        }
         else {
             children = String(children);
             vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;
