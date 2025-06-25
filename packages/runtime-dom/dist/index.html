@@ -48,7 +48,8 @@
             render,
             h,
             Text,
-            Fragment
+            Fragment,
+            ref,
         } from './runtime-dom.js';
 
         // // 使用自定义renderOptions进行渲染
@@ -283,37 +284,65 @@
         // }
         // render(h(VueComponent, { a: 1, b: 2, name: "Bilibili", age: 30 }), app);
 
-        // 组件更新
-        // 有三种方式: 状态(setup里面定义的ref、reactive)、属性(props)、插槽(slots)
-        const RenderComponent = {
-            props: {
-                name: String
-            },
-            data: () => {
-                return {
-                    age: 10
-                }
-            },
-            render() {
-                return h(Text, 'Hello ' + this.name);
-            }
-        };
+        // // 组件更新
+        // // 有三种方式: 状态(setup里面定义的ref、reactive)、属性(props)、插槽(slots)
+        // const RenderComponent = {
+        //     props: {
+        //         name: String
+        //     },
+        //     data: () => {
+        //         return {
+        //             age: 10
+        //         }
+        //     },
+        //     render() {
+        //         return h(Text, 'Hello ' + this.name);
+        //     }
+        // };
+        // const VueComponent = {
+        //     data: () => {
+        //         return {
+        //             flag: true,
+        //         }
+        //     },
+        //     render() {
+        //         return h(Fragment, [
+        //             h('button', { onClick: () => this.flag = !this.flag }, '点击我'),  // 这里就直接用this了，因为在调用render时绑定了this
+        //             h(RenderComponent,
+        //                 {
+        //                     name: this.flag ? 'Bilibili' : 'vue'  // 向子组件传递 props
+        //                 }
+        //             )
+        //         ]);
+        //     }
+        // }
+        // render(h(VueComponent), app);
+
+        // `setup`函数，每个组件都只会执行一次，可以放入我们的`compositionAPI`
+        // `setup`函数可以返回`render`函数(返回的是`render`函数)
+        // `setup`函数如果返回的是对象，则会作为组件的状态
         const VueComponent = {
-            data: () => {
-                return {
-                    flag: true,
+            setup(props, { emit, attrs, expose, slots }) {
+                // 提供渲染逻辑
+
+                const a = ref('Bilibili');
+                setTimeout(() => {
+                    a.value = 'Vue';
+                }, 1000);
+
+                return () => {
+                    
+                    return h("div", 'hello ' + a.value);
                 }
+
+                // 返回对象的话，需要下面被注释的render函数
+                // return {
+                //     a: a
+                // }
             },
-            render() {
-                return h(Fragment, [
-                    h('button', { onClick: () => this.flag = !this.flag }, '点击我'),  // 这里就直接用this了，因为在调用render时绑定了this
-                    h(RenderComponent,
-                        {
-                            name: this.flag ? 'Bilibili' : 'vue'  // 向子组件传递 props
-                        }
-                    )
-                ]);
-            }
+            // render(proxy) {
+            //     return h('div', 'hello ' + proxy.a);
+            // }
         }
         render(h(VueComponent), app);
 

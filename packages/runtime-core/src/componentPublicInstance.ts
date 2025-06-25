@@ -6,13 +6,15 @@ const publicProperty = {
 
 export const PublicInstanceProxyHandlers = {
     get(target, key) {
-        const { data, props } = target;
+        // setupState 是当setup函数返回值为对象的时候，把该对象当作组件的状态来处理，见component#handleSetupResult函数
+        const { data, props, setupState } = target;
 
         if (data && hasOwn(data, key)) {
             return data[key];
-        }
-        else if (props && hasOwn(props, key)) {
+        } else if (props && hasOwn(props, key)) {
             return props[key];
+        } else if (setupState && hasOwn(setupState, key)) {
+            return setupState[key];
         }
 
         const getter = publicProperty[key];

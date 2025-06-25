@@ -1,14 +1,14 @@
-import { ShapeFlags } from "@vue/shared";
+import { isFunction, isObject, ShapeFlags } from "@vue/shared";
 import { initProps } from "./componentProps"
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { applyOptions } from "./componentOptions";
+import { proxyRefs } from "@vue/reactivity";
 
 export function isStatefulComponent(
     instance,
 ): number {
     return instance.vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
 }
-
 
 export function createComponentInstance(
     vnode
@@ -34,6 +34,7 @@ export function createComponentInstance(
         propsOptions,          // 组件的props，其为defineProps
         component: null,
         proxy: null,           // 用来代理 props attrs data 方便访问
+        setupState: {},
     }
 
     return instance
@@ -61,11 +62,27 @@ function setupStatefulComponent(instance) {
 
     const { setup } = Component;
     if (setup) {
+        const setupContext = {
 
+        }
+        const setupResult = setup(instance.props, setupContext);
+        handleSetupResult(instance, setupResult);
     }
     else {
         finishComponentSetup(instance);
     }
+}
+
+export function handleSetupResult(
+    instance,
+    setupResult,
+): void {
+    if (isFunction(setupResult)) {
+        instance.render = setupResult;
+    } else if (isObject(setupResult)) {
+        instance.setupState = proxyRefs(setupResult)  // 将返回的值脱ref
+    }
+    finishComponentSetup(instance)
 }
 
 function finishComponentSetup(instance) {
@@ -81,5 +98,4 @@ function finishComponentSetup(instance) {
     } catch (e) {
         console.error(e)
     }
-
 }
