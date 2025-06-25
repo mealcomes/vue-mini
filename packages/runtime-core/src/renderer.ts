@@ -547,6 +547,7 @@ export function createRenderer(options) {
         if (vnode.type === Fragment) {
             unmountChildren(vnode.children);
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+            // 组件的卸载是删除subTree
             unmount(vnode.component.subTree)
         }
         else {

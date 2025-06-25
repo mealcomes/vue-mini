@@ -380,11 +380,11 @@
             },
         }
         render(h(VueComponent, {
-            onMyEvent: (value) => alert('My event is trig!\n value: ' + value)
+            onMyEvent: (value) => alert('My event is triggered\n The arg is: ' + value)
         }), app);
         setTimeout(() => {
             render(h(null, {
-                onMyEvent: (value) => alert('My event is trig!\n value: ' + value)
+                onMyEvent: (value) => alert('My event is triggered\n The arg is: ' + value)
             }), app);
         }, 1000);
 
