@@ -1,7 +1,7 @@
 import { invokeArrayFns, ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, mergeProps, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
-import { ReactiveEffect } from "@vue/reactivity";
+import { isRef, ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
 import { createComponentInstance, setupComponent } from "./component";
 import { shouldUpdateComponent, updateProps } from "./componentProps";
@@ -543,7 +543,7 @@ export function createRenderer(options) {
             n1 = null;
         }
 
-        const { type, shapeFlag } = n2;
+        const { type, shapeFlag, ref } = n2;
         switch (type) {
             // 文本节点
             // 例如 <div>hello</div> 中的 hello
@@ -563,6 +563,21 @@ export function createRenderer(options) {
 
                 break;
         }
+
+        const setRef = (rawRef, vnode) => {
+            let value = vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
+                ? vnode.component.exposed || vnode.component.proxy
+                : vnode.el;
+            if (isRef(rawRef)) {
+                rawRef.value = value;
+            }
+        }
+        // 设置ref 见index.html下ref原理相关代码
+        // 此处为简易模拟
+        if (ref != null) {
+            setRef(ref, n2);
+        }
+
     }
 
     const unmount = (vnode) => {

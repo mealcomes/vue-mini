@@ -20,6 +20,7 @@
             // onMounted,
             // onBeforeUpdate,
             // onUpdated,
+            // getCurrentInstance,
         } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
 
         import {
@@ -38,88 +39,127 @@
             getCurrentInstance,
         } from './runtime-dom.js';
 
-        // 生命周期钩子
-        // child setup
-        // child before mount
-        // child mounted
-        // parent mounted
-        // parent before update
-        // child before update
-        // child updated
-        // parent updated
-        // parent before unmount
-        // child before unmount
-        // child unmounted
-        // parent unmounted
+        // // 生命周期钩子
+        // // child setup
+        // // child before mount
+        // // child mounted
+        // // parent mounted
+        // // parent before update
+        // // child before update
+        // // child updated
+        // // parent updated
+        // // parent before unmount
+        // // child before unmount
+        // // child unmounted
+        // // parent unmounted
+        // const RenderComponent = {
+        //     props: {
+        //         name: String
+        //     },
+        //     setup(props, { emit, slots, expose, attrs }) {
+        //         console.log('child setup');
+        //         console.log(getCurrentInstance());
+        //         onBeforeMount(() => {
+        //             // 此处能拿到当前组件实例的原因见apiLifecycle#injectHook注释
+        //             console.warn('child bug: ', getCurrentInstance());
+        //             console.log('child before mount');
+        //         });
+        //         onMounted(() => {
+        //             console.log('child mounted');
+        //         });
+        //         onBeforeUpdate(() => {
+        //             console.log('child before update');
+        //         });
+        //         onUpdated(() => {
+        //             console.log('child updated');
+        //         });
+        //         onBeforeUnmount(() => {
+        //             console.log('child before unmount');
+        //         });
+        //         onUnmounted(() => {
+        //             console.log('child unmounted');
+        //         });
+        //         return () => {
+        //             return h('div', 'Hello ' + props.name);
+        //         }
+        //     }
+        // };
+        // const VueComponent = {
+        //     setup(props, { emit, expose, slots, attrs }) {
+        //         console.log('parent setup');
+        //         console.log(getCurrentInstance());
+        //         onBeforeMount(() => {
+        //             console.log('parent before mount');
+        //         });
+        //         onMounted(() => {
+        //             console.log('parent mounted');
+        //         });
+        //         onBeforeUpdate(() => {
+        //             console.log('parent before update');
+        //         });
+        //         onUpdated(() => {
+        //             console.log('parent updated');
+        //         });
+        //         onBeforeUnmount(() => {
+        //             console.log('parent before unmount');
+        //         });
+        //         onUnmounted(() => {
+        //             console.log('parent unmounted');
+        //         });
+        //         const name = ref('Bilibili!');
+        //         setTimeout(() => {
+        //             name.value = 'Vue!'
+        //         }, 1000);
+        //         return () => {
+        //             return h(RenderComponent, {
+        //                 name: name.value
+        //             });
+        //         }
+        //     }
+        // }
+        // render(h(VueComponent), app);
+        // setTimeout(() => {
+        //     render(h(null), app);
+        // }, 2000);
+
+        // ref 原理
+        // 1. 如果ref放到了组件上，指代的是组件实例(instance)
+        // 2. 如果ref放到了组件上，且该组件expose了对象，则指代的是该expose对象
+        // 3. 如果放在了dom元素上，则指代的是dom元素
         const RenderComponent = {
             props: {
-                name: String
+                name: Number
             },
             setup(props, { emit, slots, expose, attrs }) {
-                console.log('child setup');
-                console.log(getCurrentInstance());
-                onBeforeMount(() => {
-                    // 此处能拿到当前组件实例的原因见apiLifecycle#injectHook注释
-                    console.warn('child bug: ', getCurrentInstance());
-                    console.log('child before mount');
+                expose({
+                    name: 200
                 });
+                const comp = ref(null);
                 onMounted(() => {
-                    console.log('child mounted');
-                });
-                onBeforeUpdate(() => {
-                    console.log('child before update');
-                });
-                onUpdated(() => {
-                    console.log('child updated');
-                });
-                onBeforeUnmount(() => {
-                    console.log('child before unmount');
-                });
-                onUnmounted(() => {
-                    console.log('child unmounted');
+                    // 此处打印的是dom元素<div>Hello 100</div>
+                    console.log(comp.value);
                 });
                 return () => {
-                    return h('div', 'Hello ' + props.name);
+                    return h('div', { ref: comp }, 'Hello ' + props.name);
                 }
             }
         };
         const VueComponent = {
             setup(props, { emit, expose, slots, attrs }) {
-                console.log('parent setup');
-                console.log(getCurrentInstance());
-                onBeforeMount(() => {
-                    console.log('parent before mount');
-                });
+                const comp = ref(null);
                 onMounted(() => {
-                    console.log('parent mounted');
+                    // 当RenderComponent#setup中的expose了对象时，此处打印的是200
+                    // 否则此处打印的是100(即RenderComponent组件实例上的props)
+                    console.log(comp.value.name);
                 });
-                onBeforeUpdate(() => {
-                    console.log('parent before update');
-                });
-                onUpdated(() => {
-                    console.log('parent updated');
-                });
-                onBeforeUnmount(() => {
-                    console.log('parent before unmount');
-                });
-                onUnmounted(() => {
-                    console.log('parent unmounted');
-                });
-                const name = ref('Bilibili!');
-                setTimeout(() => {
-                    name.value = 'Vue!'
-                }, 1000);
                 return () => {
                     return h(RenderComponent, {
-                        name: name.value
+                        ref: comp, name: 100
                     });
                 }
             }
         }
         render(h(VueComponent), app);
-        setTimeout(() => {
-            render(h(null), app);
-        }, 2000);
 
 
     </script>

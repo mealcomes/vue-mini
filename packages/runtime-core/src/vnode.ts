@@ -27,6 +27,7 @@ export function createVNode(type, props = null, children = null) {
         key: props?.key,
         el: null,
         shapeFlag,
+        ref: props?.ref,     // 组件上的ref，见index.html下ref原理相关代码
     }
 
     if (children) {
