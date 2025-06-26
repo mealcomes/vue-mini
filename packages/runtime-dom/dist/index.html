@@ -59,7 +59,8 @@
                 console.log('child setup');
                 console.log(getCurrentInstance());
                 onBeforeMount(() => {
-                    console.warn('child bug: ', getCurrentInstance()); // 此处能拿到当前组件实例的原因见apiLifecycle#createHook注释
+                    // 此处能拿到当前组件实例的原因见apiLifecycle#injectHook注释
+                    console.warn('child bug: ', getCurrentInstance());
                     console.log('child before mount');
                 });
                 onMounted(() => {

@@ -14,8 +14,10 @@ export function injectHook(type, hook, target) {
         // 钩子函数一定是在setup函数执行完之后执行的
         // 而 setup 函数执行完后全局实例会被置为 null 
         // 此处便是为了确保在钩子函数中能拿到当前组件的实例
-        // 见 index.html 中的生命周期钩子相关注释
+        // 见 index.html 中的生命周期钩子相关代码
         const wrappedHook = (...args: unknown[]) => {
+            // 将当前全局实例设置为target
+            // 从而在钩子函数中调用getCurrentInstance函数时能拿到当前组件实例
             const reset = setCurrentInstance(target)
             const res = hook(...args);
             reset()
