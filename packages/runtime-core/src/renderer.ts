@@ -56,7 +56,9 @@ export function createRenderer(options) {
         // }
         if (props) {
             for (const key in props) {
-                hostPatchProp(el, key, null, props[key]);
+                if (key !== 'value' && key !== 'ref' && key !== 'key') {
+                    hostPatchProp(el, key, null, props[key]);
+                }
             }
         }
 

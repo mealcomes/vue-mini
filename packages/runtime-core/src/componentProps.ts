@@ -8,6 +8,11 @@ export function initProps(instance, rawProps) {
     const propsOptions = instance.propsOptions || {};  // 组件中定义的defineProps
     if (rawProps) {
         for (let key in rawProps) {
+            // 对于h函数传入的props，如果key为key或ref，则为特殊的属性，不能算作props或attrs
+            if (key === 'key' || key === 'ref') {
+                continue
+            }
+
             const value = rawProps[key];
             if (key in propsOptions) {
                 props[key] = value;
@@ -57,7 +62,7 @@ export function shouldUpdateComponent(prevVNode, nextVNode) {
 
     // 如果有插槽，则需要进行渲染
     if (prevChildren || nextChildren) return true;
-    
+
     if (prevProps === nextProps) return false;
 
     return hasPropsChanged(prevProps, nextProps);

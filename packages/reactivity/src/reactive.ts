@@ -38,9 +38,10 @@ function createReactiveObject(target: object) {
     }
 
     // 处理一些不能被代理的对象，例如dom元素
+    // 修复当dom元素上传入了ref，本应拿到dom元素，但实际拿到了dom元素的代理对象，此处便对类似dom元素这类对象进行特殊处理
     const targetType = getTargetType(target)
     if (targetType === TargetType.INVALID) {
-        return target
+        return target;
     }
 
     const existingProxy = reactiveMap.get(target);
