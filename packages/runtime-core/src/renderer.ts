@@ -571,8 +571,20 @@ export function createRenderer(options) {
         if (vnode.type === Fragment) {
             unmountChildren(vnode.children);
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+            const { bum, um } = vnode.component;
+
+            // 执行beforeUnmount钩子
+            if (bum) {
+                invokeArrayFns(bum);
+            }
+
             // 组件的卸载是删除subTree
             unmount(vnode.component.subTree);
+
+            // 执行Unmounted钩子
+            if (um) {
+                invokeArrayFns(um);
+            }
         }
         else {
             const { el } = vnode;

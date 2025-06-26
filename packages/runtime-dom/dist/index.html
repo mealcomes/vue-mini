@@ -33,6 +33,8 @@
             onMounted,
             onBeforeUpdate,
             onUpdated,
+            onBeforeUnmount,
+            onUnmounted,
             getCurrentInstance,
         } from './runtime-dom.js';
 
@@ -45,6 +47,10 @@
         // child before update
         // child updated
         // parent updated
+        // parent before unmount
+        // child before unmount
+        // child unmounted
+        // parent unmounted
         const RenderComponent = {
             props: {
                 name: String
@@ -64,6 +70,12 @@
                 });
                 onUpdated(() => {
                     console.log('child updated');
+                });
+                onBeforeUnmount(() => {
+                    console.log('child before unmount');
+                });
+                onUnmounted(() => {
+                    console.log('child unmounted');
                 });
                 return () => {
                     return h('div', 'Hello ' + props.name);
@@ -86,6 +98,12 @@
                 onUpdated(() => {
                     console.log('parent updated');
                 });
+                onBeforeUnmount(() => {
+                    console.log('parent before unmount');
+                });
+                onUnmounted(() => {
+                    console.log('parent unmounted');
+                });
                 const name = ref('Bilibili!');
                 setTimeout(() => {
                     name.value = 'Vue!'
@@ -98,6 +116,9 @@
             }
         }
         render(h(VueComponent), app);
+        setTimeout(() => {
+            render(h(null), app);
+        }, 2000);
 
 
     </script>
