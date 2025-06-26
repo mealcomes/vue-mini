@@ -1,4 +1,4 @@
-import { ShapeFlags } from "@vue/shared";
+import { invokeArrayFns, ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, mergeProps, normalizeVNode } from "./vnode";
 import { Text } from "./vnode";
 import { ReactiveEffect } from "@vue/reactivity";
@@ -95,6 +95,13 @@ export function createRenderer(options) {
             // render函数需要返回vnode(执行h函数得到的结果)
 
             if (!instance.isMounted) {
+                const { bm, m } = instance;
+
+                // 执行beforeMount钩子
+                if (bm) {
+                    invokeArrayFns(bm);
+                }
+
                 // call(instance.state, instance.state)
                 // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
                 // 后一个参数是将state作为参数传给组件对象的render函数
@@ -114,18 +121,35 @@ export function createRenderer(options) {
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
                 instance.isMounted = true;
+
+                // 执行Mounted钩子
+                if (m) {
+                    invokeArrayFns(m);
+                }
             }
             else {
-                const { next } = instance;
+                const { next, bu, u } = instance;
                 if (next) {
                     // 更新属性和插槽 见本文件createRenderer中的updateComponent函数
                     updateComponentPreRender(instance, next);
+                }
+
+                // 执行beforeUpdate钩子
+                // 因为第一次到达这里时，next为null，然后在下面patch中会将next置为新的vnode，然后再次进入本函数，从而进入next逻辑
+                // 所以bu是在此处执行
+                if (bu) {
+                    invokeArrayFns(bu)
                 }
                 const subTree = normalizeVNode(render.call(instance.proxy, instance.proxy));
 
                 // 基于状态的组件更新
                 patch(instance.subTree, subTree, container, anchor);
                 instance.subTree = subTree
+
+                // 执行updated钩子
+                if (u) {
+                    invokeArrayFns(u)
+                }
             }
         }
 
@@ -548,7 +572,7 @@ export function createRenderer(options) {
             unmountChildren(vnode.children);
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
             // 组件的卸载是删除subTree
-            unmount(vnode.component.subTree)
+            unmount(vnode.component.subTree);
         }
         else {
             const { el } = vnode;

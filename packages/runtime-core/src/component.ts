@@ -43,6 +43,23 @@ export function createComponentInstance(
     return instance
 }
 
+// 此处的设计类似依赖收集时的全局activeEffect
+// 帮助拿到当前的组件实例，用于生命周期时的调用
+export let currentInstance = null;
+export const getCurrentInstance = () => {
+    return currentInstance;
+}
+export const setCurrentInstance = (instance) => {
+    const prev = currentInstance;
+    currentInstance = instance;
+    return () => {
+        currentInstance = prev;
+    }
+}
+export const unsetCurrentInstance = () => {
+    currentInstance = null;
+}
+
 // 初始化instance.props和instance.attrs
 export function setupComponent(
     instance,
@@ -70,7 +87,7 @@ function setupStatefulComponent(instance) {
             slots: instance.slots,
             attrs: instance.attrs,
             // 通过合成eventName，再找到父组件onEventName属性对应的函数并对其进行调用
-            emit(event: string, ...args) {  
+            emit(event: string, ...args) {
                 const eventName = `on${event[0].toUpperCase() + event.slice(1)}`;
                 const handler = instance.vnode.props[eventName];
                 handler && handler(...args);
@@ -80,8 +97,11 @@ function setupStatefulComponent(instance) {
                 instance.exposed = value;
             },
         }
+        // 设置当前组件实例到全局，从而setup函数能够拿到该实例
+        const reset = setCurrentInstance(instance);
         // 传入 setupContext， 见index.html中使用的setup传入的参数
         const setupResult = setup(instance.props, setupContext);
+        reset();  // 恢复全局实例
         handleSetupResult(instance, setupResult);
     }
     else {

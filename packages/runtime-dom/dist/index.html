@@ -14,35 +14,14 @@
         import {
             // createRenderer,
             // render,
-            // h
+            // h,
+            // ref,
+            // onBeforeMount,
+            // onMounted,
+            // onBeforeUpdate,
+            // onUpdated,
         } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
 
-        /**
-         * 1. createRenderer 我们可以自己创建渲染器 （开发者自己提供渲染方法）
-         * 2. render 用内置的渲染器进行渲染（渲染dom元素）
-         * 3. h 函数可以创建一个虚拟dom 
-         * */
-
-        // let ele = h('h1', 'Vue Bilibili')
-        // // 方式1 使用内置渲染器
-        // render(ele, app);
-        // // 方式2 自定义渲染器
-        // const renderer = createRenderer({
-        //     createElement(type) {
-        //         console.log(type);
-        //         return document.createElement(type);
-        //     },
-        //     setElementText(el, text) {
-        //         el.textContent = text;
-        //     },
-        //     insert(child, parent, anchor) {
-        //         parent.appendChild(child);
-        //     }
-        // });
-        // renderer.render(ele, app);
-
-        // runtime-dom 主要作用是提供DOM API (提供一系列dom操作的api函数)
-        // @vue/runtime-dom()  -->  @vue/runtime-core(平台无关)  -->  @vue/reactivity
         import {
             rendererOptions,
             render,
@@ -50,343 +29,76 @@
             Text,
             Fragment,
             ref,
+            onBeforeMount,
+            onMounted,
+            onBeforeUpdate,
+            onUpdated,
+            getCurrentInstance,
         } from './runtime-dom.js';
 
-        // // 使用自定义renderOptions进行渲染
-        // let ele = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //         backgroundColor: 'lightblue',
-        //         borderRadius: '10px',
-        //         padding: '10px',
-        //         width: '200px',
-        //         textAlign: 'center',
-        //         cursor: 'pointer',
-        //         margin: '20px auto'
-        //     },
-        //     onClick: () => {
-        //         alert('Hello Vue Bilibili');
-        //     }
-        // }, 'Vue Bilibili')
-        // const renderer = createRenderer(rendererOptions);
-        // renderer.render(ele, app);
-
-        // // runtime-dom#render进行渲染
-        // let ele1 = h('p', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        // }, [h('h1', 'Vue Bilibili'), h('p', 'Hello Vue Bilibili'), 'welcome to Vue Bilibili']);
-        // let ele2 = h('h1', {
-        //     style: {
-        //         color: 'blue',
-        //     },
-        // }, 'Vue Bilibili')
-        // render(ele1, app);
-
-        //**************diff***********************************
-
-        // // 1. 直接取消挂载
-        // let ele1 = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        // }, 'Vue Bilibili');
-        // setTimeout(() => {
-        //     render(null, app);
-        // }, 1000);
-
-        // // 2. 两次 vnode 不同(type 不同或 key 不同)
-        // let ele1 = h('div', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        //     key: 1
-        // }, 'Vue Bilibili');
-        // let ele2 = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        //     key: 1
-        // }, 'Vue Bilibili')
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(ele2, app);
-        // }, 1000);
-
-
-        // // 3. props 存在不同，dom复用，更新props
-        // let ele1 = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        // }, 'Vue Bilibili');
-        // let ele2 = h('h1', {
-        //     style: {
-        //         color: 'blue',
-        //     },
-        // }, 'Vue Bilibili')
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(ele2, app);
-        // }, 1000);
-
-        // // 4. 子节点不同(不全为数组)，使用部分diff算法
-        // let ele1 = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        // }, 'Vue Bilibili');
-        // let ele2 = h('h1', {
-        //     style: {
-        //         color: 'red',
-        //     },
-        // }, ['vue', h('p', 'Hello Vue Bilibili')])
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(ele2, app);
-        // }, 1000);
-
-        // // 5. 子节点不同(全为数组)，使用全量diff算法
-        // let ele1 = h('div',
-        //     {
-        //         class: 'container',
-        //         style: {
-        //             width: '50px',
-        //             textAlign: 'center',
-        //         }
-        //     },
-        //     [
-        //         h('p', { key: 'a' }, 'a'),
-        //         h('p', { key: 'b' }, 'b'),
-        //         h('p', { key: 'c' }, 'c'),
-        //         h('p', { key: 'd' }, 'd'),
-        //         h('p', { key: 'e', style: { color: 'red' } }, 'e'),
-        //         h('p', { key: 'Q' }, 'Q'),
-        //         h('p', { key: 'f' }, 'f'),
-        //         h('p', { key: 'g' }, 'g'),
-        //     ]);
-        // let ele2 = h('div',
-        //     {
-        //         class: 'container',
-        //         style: {
-        //             width: '50px',
-        //             textAlign: 'center',
-        //         }
-        //     },
-        //     [
-        //         h('p', { key: 'a' }, 'a'),
-        //         h('p', { key: 'b' }, 'b'),
-        //         h('p', { key: 'e', style: { color: 'blue' } }, 'e'),
-        //         h('p', { key: 'c' }, 'c'),
-        //         h('p', { key: 'd' }, 'd'),
-        //         h('p', { key: 'h' }, 'h'),
-        //         h('p', { key: 'f' }, 'f'),
-        //         h('p', { key: 'g' }, 'g'),
-        //     ]);
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(ele2, app);
-        // }, 1000);
-
-        // *****************************************************
-
-        // // 文本类型节点渲染
-        // let ele1 = h(Text, ['Bilibili', 'Hello']);
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(null, app);
-        // }, 1000);
-
-        // // Fragment类型节点渲染
-        // let ele1 = h(Fragment,
-        //     {
-        //         style: {
-        //             width: '50px',
-        //             textAlign: 'center',
-        //         }
-        //     },
-        //     [
-        //         h('div', 'hello'),
-        //         h('a', 'world'),
-        //     ]);
-        // let ele2 = h(Fragment,
-        //     {
-        //         style: {
-        //             width: '50px',
-        //             textAlign: 'center',
-        //         }
-        //     },
-        //     [
-        //         h('div', 'hello'),
-        //         h('a', 'Vue'),
-        //     ]);
-        // render(ele1, app);
-        // setTimeout(() => {
-        //     render(ele2, app);
-        //     render(null, app);
-        // }, 1000);
-
-        // // 组件渲染
-        // // template ==> render
-        // // 组件两个虚拟节点组成 h(VueComponent) = vnode 产生的是组件内的虚拟节点
-        // // render 函数返回的h函数执行后获得的虚拟节点才是最终要渲染的内容(subTree)
-        // // 如下，VueComponent中的render函数返回的h函数得到的vnode(subTree)才是最终要渲染的内容
-        // const VueComponent = {
-        //     data() {
-        //         return {
-        //             name: "jw",
-        //             age: 30
-        //         }
-        //     },
-        //     render(proxy) { // 此处proxy传入的变为data函数返回的对象
-        //         // 如果一次性改了多次数据，那么由于每次改变都会重新改变，所以页面更新频率会成指数增长
-        //         // 因此需要进行批量更新，即使用异步更新组件，见 renderer#setupRenderEffect
-        //         setTimeout(() => {
-        //             proxy.age++;
-        //             proxy.age++;
-        //             proxy.age++;
-        //             proxy.age++;
-        //         }, 1000)
-        //         return h('div', [
-        //             h(Text, 'Hello Bilibili'),
-        //             h('p', this.age)
-        //         ]);
-        //     }
-        // }
-        // render(h(VueComponent), app);
-
-        // // 组件props和attrs实现，同时为component的render提供proxy，用于获取props等
-        // // 属性为 props + attrs(非响应式),其为 h 函数传入的参数
-        // // 但由于类似<el-button class='button' type='text'/>的操作，我们传入了class和type两个属性
-        // // 但最终type会变为el-button组件的props，class会变成el-button组件中button的标签属性attrs
-        // // 故所有通过h函数传入的属性除去props后等于attrs
-        // const VueComponent = {
-        //     props: {  // defineProps
-        //         name: String,
-        //         age: Number
-        //     },
-        //     // data 函数会在 ComponentOption#applyOption 中被执行并转为响应式数据
-        //     data: () => {
-        //         return {
-        //             count: 10
-        //         }
-        //     },
-        //     // rendered#setupRenderEffect 中调用该函数，并将结果转为虚拟节点进行渲染
-        //     render(proxy) {
-        //         console.log('proxy: ', proxy);
-        //         return h('div', [
-        //             h(Text, 'Hello ' + proxy.name),
-        //             h('p', ['count: ', proxy.count]),
-        //             h('button', { onClick: () => { proxy.count++; } }, ['点我'])
-        //         ]);
-        //     }
-        // }
-        // render(h(VueComponent, { a: 1, b: 2, name: "Bilibili", age: 30 }), app);
-
-        // // 组件更新
-        // // 有三种方式: 状态(setup里面定义的ref、reactive)、属性(props)、插槽(slots)
-        // const RenderComponent = {
-        //     props: {
-        //         name: String
-        //     },
-        //     data: () => {
-        //         return {
-        //             age: 10
-        //         }
-        //     },
-        //     render() {
-        //         return h(Text, 'Hello ' + this.name);
-        //     }
-        // };
-        // const VueComponent = {
-        //     data: () => {
-        //         return {
-        //             flag: true,
-        //         }
-        //     },
-        //     render() {
-        //         return h(Fragment, [
-        //             h('button', { onClick: () => this.flag = !this.flag }, '点击我'),  // 这里就直接用this了，因为在调用render时绑定了this
-        //             h(RenderComponent,
-        //                 {
-        //                     name: this.flag ? 'Bilibili' : 'vue'  // 向子组件传递 props
-        //                 }
-        //             )
-        //         ]);
-        //     }
-        // }
-        // render(h(VueComponent), app);
-
-        // // `setup`函数，每个组件都只会执行一次，可以放入我们的`compositionAPI`
-        // // `setup`函数可以返回`render`函数(返回的是`render`函数)
-        // // `setup`函数如果返回的是对象，则会作为组件的状态
-        // const VueComponent = {
-        //     setup(props, { emit, attrs, expose, slots }) {  // setup 才有 { emit, attrs, expose, slots }
-        //         // 提供渲染逻辑
-        //         const a = ref('Bilibili');
-        //         setTimeout(() => {
-        //             a.value = 'Vue';
-        //         }, 1000);
-        //         return () => {
-        //             return h("div", 'hello ' + a.value);
-        //         }
-        //         // 返回对象的话，需要下面被注释的render函数
-        //         // return {
-        //         //     a: a
-        //         // }
-        //     },
-        //     // render(proxy) {
-        //     //     return h('div', 'hello ' + proxy.a);
-        //     // }
-        // }
-        // render(h(VueComponent), app);
-
-        // // 插槽实现
-        // const RenderComponent = {
-        //     render(proxy) {
-        //         console.log(proxy);
-        //         return h(Fragment, [
-        //             proxy.$slots.header('Hello header'),
-        //             proxy.$slots.footer('Hello footer'),
-        //         ]);
-        //     }
-        // };
-        // const VueComponent = {
-        //     setup(props, { emit, attrs, expose, slots }) {
-        //         return (proxy) => {
-        //             return h(RenderComponent, null, {    // 此处第二个参数应该传递null，见 Commit 93d6126
-        //                 default: (content) => h('default', '我是默认值, 我的内容是：' + content),
-        //                 header: (content) => h('header', '我来组成头部, 我的内容是：' + content),
-        //                 footer: (content) => h('footer', '我来组成脚部, 我的内容是：' + content),
-        //             })
-        //         }
-        //     },
-        // }
-        // render(h(VueComponent), app);
-
-        // emit实现
-        const VueComponent = {
-            setup(props, { emit, attrs, expose, slots }) {
-                return (proxy) => {
-                    // 在实例上暴露属性
-                    expose({
-                        age: 20
-                    })
-                    return h('button', {
-                        onClick: () => emit('myEvent', 'Vue')
-                    }, '点我');
-                }
+        // 生命周期钩子
+        // child setup
+        // child before mount
+        // child mounted
+        // parent mounted
+        // parent before update
+        // child before update
+        // child updated
+        // parent updated
+        const RenderComponent = {
+            props: {
+                name: String
             },
+            setup(props, { emit, slots, expose, attrs }) {
+                console.log('child setup');
+                console.log(getCurrentInstance());
+                onBeforeMount(() => {
+                    console.warn('child bug: ', getCurrentInstance()); // 此处能拿到当前组件实例的原因见apiLifecycle#createHook注释
+                    console.log('child before mount');
+                });
+                onMounted(() => {
+                    console.log('child mounted');
+                });
+                onBeforeUpdate(() => {
+                    console.log('child before update');
+                });
+                onUpdated(() => {
+                    console.log('child updated');
+                });
+                return () => {
+                    return h('div', 'Hello ' + props.name);
+                }
+            }
+        };
+        const VueComponent = {
+            setup(props, { emit, expose, slots, attrs }) {
+                console.log('parent setup');
+                console.log(getCurrentInstance());
+                onBeforeMount(() => {
+                    console.log('parent before mount');
+                });
+                onMounted(() => {
+                    console.log('parent mounted');
+                });
+                onBeforeUpdate(() => {
+                    console.log('parent before update');
+                });
+                onUpdated(() => {
+                    console.log('parent updated');
+                });
+                const name = ref('Bilibili!');
+                setTimeout(() => {
+                    name.value = 'Vue!'
+                }, 1000);
+                return () => {
+                    return h(RenderComponent, {
+                        name: name.value
+                    });
+                }
+            }
         }
-        render(h(VueComponent, {
-            onMyEvent: (value) => alert('My event is triggered\n The arg is: ' + value)
-        }), app);
-        setTimeout(() => {
-            render(h(null, {
-                onMyEvent: (value) => alert('My event is triggered\n The arg is: ' + value)
-            }), app);
-        }, 1000);
+        render(h(VueComponent), app);
+
 
     </script>
 </body>
