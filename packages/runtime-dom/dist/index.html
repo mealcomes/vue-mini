@@ -122,44 +122,52 @@
         //     render(h(null), app);
         // }, 2000);
 
-        // ref 原理
-        // 1. 如果ref放到了组件上，指代的是组件实例(instance)
-        // 2. 如果ref放到了组件上，且该组件expose了对象，则指代的是该expose对象
-        // 3. 如果放在了dom元素上，则指代的是dom元素
-        const RenderComponent = {
-            props: {
-                name: Number
-            },
-            setup(props, { emit, slots, expose, attrs }) {
-                expose({
-                    name: 200
-                });
-                const comp = ref(null);
-                onMounted(() => {
-                    // 此处打印的是dom元素<div>Hello 100</div>
-                    console.log(comp.value);
-                });
-                return () => {
-                    return h('div', { ref: comp }, 'Hello ' + props.name);
-                }
-            }
-        };
-        const VueComponent = {
-            setup(props, { emit, expose, slots, attrs }) {
-                const comp = ref(null);
-                onMounted(() => {
-                    // 当RenderComponent#setup中的expose了对象时，此处打印的是200
-                    // 否则此处打印的是100(即RenderComponent组件实例上的props)
-                    console.log(comp.value.name);
-                });
-                return () => {
-                    return h(RenderComponent, {
-                        ref: comp, name: 100
-                    });
-                }
-            }
+        // // ref 原理
+        // // 1. 如果ref放到了组件上，指代的是组件实例(instance)
+        // // 2. 如果ref放到了组件上，且该组件expose了对象，则指代的是该expose对象
+        // // 3. 如果放在了dom元素上，则指代的是dom元素
+        // const RenderComponent = {
+        //     props: {
+        //         name: Number
+        //     },
+        //     setup(props, { emit, slots, expose, attrs }) {
+        //         expose({
+        //             name: 200
+        //         });
+        //         const comp = ref(null);
+        //         onMounted(() => {
+        //             // 此处打印的是dom元素<div>Hello 100</div>
+        //             console.log(comp.value);
+        //         });
+        //         return () => {
+        //             return h('div', { ref: comp }, 'Hello ' + props.name);
+        //         }
+        //     }
+        // };
+        // const VueComponent = {
+        //     setup(props, { emit, expose, slots, attrs }) {
+        //         const comp = ref(null);
+        //         onMounted(() => {
+        //             // 当RenderComponent#setup中的expose了对象时，此处打印的是200
+        //             // 否则此处打印的是100(即RenderComponent组件实例上的props)
+        //             console.log(comp.value.name);
+        //         });
+        //         return () => {
+        //             return h(RenderComponent, {
+        //                 ref: comp, name: 100
+        //             });
+        //         }
+        //     }
+        // }
+        // render(h(VueComponent), app);
+
+        // 函数式组件
+        function functionComponent(props) {
+            console.log(props);
+            
+            return h('div', props.a + props.b)
         }
-        render(h(VueComponent), app);
+        render(h(functionComponent, {a: 1, b: 2}), app)
 
 
     </script>

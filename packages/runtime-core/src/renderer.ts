@@ -5,6 +5,7 @@ import { isRef, ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
 import { createComponentInstance, setupComponent } from "./component";
 import { shouldUpdateComponent, updateProps } from "./componentProps";
+import { renderComponentRoot } from "./componentRenderUtils";
 
 
 /*
@@ -91,11 +92,6 @@ export function createRenderer(options) {
 
         // 组件更新函数
         const componentUpdateFn = () => {
-            // call(instance.state, instance.state)
-            // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
-            // 后一个参数是将state作为参数传给组件对象的render函数
-            // render函数需要返回vnode(执行h函数得到的结果)
-
             if (!instance.isMounted) {
                 const { bm, m } = instance;
 
@@ -104,21 +100,7 @@ export function createRenderer(options) {
                     invokeArrayFns(bm);
                 }
 
-                // call(instance.state, instance.state)
-                // 前一个参数是绑定this(因为组件对象的render函数里面会用到this)
-                // 后一个参数是将state作为参数传给组件对象的render函数
-                // render函数需要返回vnode(执行h函数得到的结果)
-                const subTree = normalizeVNode(
-                    // render函数中会用到响应式数据，加上下面转为ReactiveEffect，是实现视图跟随数据变化响应式更新的关键之一
-                    render.call(instance.proxy, instance.proxy)
-                );
-
-                // 简单处理父组件向子组件通过h函数参数传递的属性
-                const extraProps = instance.attrs;
-                if (extraProps) {
-                    const mergedProps = mergeProps(subTree.props || {}, extraProps);
-                    subTree.props = mergedProps;
-                }
+                const subTree = renderComponentRoot(instance);
 
                 patch(null, subTree, container, anchor);
                 instance.subTree = subTree;
@@ -142,7 +124,7 @@ export function createRenderer(options) {
                 if (bu) {
                     invokeArrayFns(bu)
                 }
-                const subTree = normalizeVNode(render.call(instance.proxy, instance.proxy));
+                const subTree = renderComponentRoot(instance);
 
                 // 基于状态的组件更新
                 patch(instance.subTree, subTree, container, anchor);
