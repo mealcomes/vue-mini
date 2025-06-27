@@ -12,7 +12,8 @@ export function isStatefulComponent(
 }
 
 export function createComponentInstance(
-    vnode
+    vnode,
+    parent
 ) {
     const {
         props: propsOptions = {}   // 组件的props，其为defineProps(用户声明的props)
@@ -25,12 +26,15 @@ export function createComponentInstance(
         // state: {},          // 原本 data 为 state
         vnode,                 // 组件的虚拟节点
         type,                  // h 函数的第一个参数, 
+        parent,                // 父组件
         next: null,            // 组件更新时用到的next
         subTree: null,         // 子树
         update: null,          // 组件的更新函数
         render: null,          // render 函数
         proxy: null,           // 用来代理 props attrs data 方便访问
         exposed: null,         // 用于暴露组件内部数据的函数
+
+        provides: parent ? parent.provides : Object.create(null),
 
         components: null,
 

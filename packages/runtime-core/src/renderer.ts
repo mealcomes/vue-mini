@@ -28,7 +28,7 @@ export function createRenderer(options) {
     } = options
 
     // 递归渲染子节点
-    const mountChildren = (children: Array<any>, container) => {
+    const mountChildren = (children: Array<any>, container, parentComponent) => {
         // 数组扁平化，避免嵌套
         // children = children.flat();  // 此处不能直接扁平化，意外扁平化获得的数组是一个新的数组，
         // 此时如果有一个children为text，那么最终children中不能对应变为vnode类型
@@ -38,11 +38,11 @@ export function createRenderer(options) {
             // 例如 <div>hello</div> 中的 hello 规范化为
             // { type: Symbol(v-txt), props: null, children: 'hello', shapeFlag: 8 }
             const child = (children[i] = normalizeVNode(children[i]));
-            patch(null, child, container);
+            patch(null, child, container, null, parentComponent);
         }
     }
 
-    const mountElement = (vnode, container, anchor) => {
+    const mountElement = (vnode, container, anchor, parentComponent) => {
         const { type, props, shapeFlag, children } = vnode;
 
         // 第一次渲染时，让 vnode.el 指向真实的 DOM 元素
@@ -69,15 +69,15 @@ export function createRenderer(options) {
         }
         // 处理数组类型的子节点
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-            mountChildren(vnode.children, el);
+            mountChildren(vnode.children, el, parentComponent);
         }
 
         hostInsert(el, container, anchor);
     }
 
     // 结合index.html#8,#9
-    const mountComponent = (vnode, container, anchor,) => {
-        const instance = (vnode.component = createComponentInstance(vnode))
+    const mountComponent = (vnode, container, anchor, parentComponent) => {
+        const instance = (vnode.component = createComponentInstance(vnode, parentComponent))
 
         // 初始化instance.props和instance.attrs
         setupComponent(instance);
@@ -88,8 +88,6 @@ export function createRenderer(options) {
 
     // 将组件的渲染和响应式数据进行绑定
     const setupRenderEffect = (instance, vnode, container, anchor,) => {
-        const { render } = instance;
-
         // 组件更新函数
         const componentUpdateFn = () => {
             if (!instance.isMounted) {
@@ -102,7 +100,7 @@ export function createRenderer(options) {
 
                 const subTree = renderComponentRoot(instance);
 
-                patch(null, subTree, container, anchor);
+                patch(null, subTree, container, anchor, instance);
                 instance.subTree = subTree;
                 instance.isMounted = true;
 
@@ -127,7 +125,7 @@ export function createRenderer(options) {
                 const subTree = renderComponentRoot(instance);
 
                 // 基于状态的组件更新
-                patch(instance.subTree, subTree, container, anchor);
+                patch(instance.subTree, subTree, container, anchor, instance);
                 instance.subTree = subTree
 
                 // 执行updated钩子
@@ -161,32 +159,33 @@ export function createRenderer(options) {
         }
     }
 
-    const processFragment = (n1, n2, container, anchor) => {
+    const processFragment = (n1, n2, container, parentComponent) => {
         if (n1 == null) {
-            mountChildren(n2.children, container);
+            mountChildren(n2.children, container, parentComponent);
         }
         else {
-            patchChildren(n1, n2, container);
+            patchChildren(n1, n2, container, parentComponent);
         }
     }
 
-    const processElement = (n1, n2, container, anchor) => {
+    const processElement = (n1, n2, container, anchor, parentComponent) => {
         if (n1 == null) {
-            mountElement(n2, container, anchor);
+            mountElement(n2, container, anchor, parentComponent);
         }
         // n1已经存在(container上已经存在dom)，需要进行比对进行diff
         else {
-            patchElement(n1, n2, container);
+            patchElement(n1, n2, container, parentComponent);
         }
     }
 
-    const processComponent = (n1, n2, container, anchor) => {
+    const processComponent = (n1, n2, container, anchor, parentComponent) => {
         if (n1 == null) {
             // 组件渲染
             mountComponent(
                 n2,
                 container,
                 anchor,
+                parentComponent
             )
         } else {
             // 组件更新
@@ -456,7 +455,7 @@ export function createRenderer(options) {
 
     // 比对children进行diff
     // 进入该函数时，n1和n2的key与type一定是相同的
-    const patchChildren = (n1, n2, container) => {
+    const patchChildren = (n1, n2, container, parentComponent) => {
         const c1 = n1.children;
         const prevShapeFlag = n1 ? n1.shapeFlag : 0  // 拿到先前的类型
         const c2 = n2.children;
@@ -493,7 +492,7 @@ export function createRenderer(options) {
                 }
                 // 新的是数组，进行挂载
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    mountChildren(c2, container);
+                    mountChildren(c2, container, parentComponent);
                 }
             }
         }
@@ -502,7 +501,7 @@ export function createRenderer(options) {
     // 进入该函数时，n1和n2的key与type一定是相同的
     // 1. 比较元素的差异，尽可能复用dom元素
     // 2. 比较属性和元素的子节点
-    const patchElement = (n1, n2, container) => {
+    const patchElement = (n1, n2, container, parentComponent) => {
         let el = (n2.el = n1.el);  // dom 复用
 
         let oldProps = n1.props || {};
@@ -512,10 +511,10 @@ export function createRenderer(options) {
         patchProp(oldProps, newProps, el);
 
         // 比对子节点(第三个参数传的是el而不是container)
-        patchChildren(n1, n2, el);
+        patchChildren(n1, n2, el, parentComponent);
     }
 
-    const patch = (n1, n2, container, anchor = null) => {
+    const patch = (n1, n2, container, anchor = null, parentComponent = null) => {
         if (n1 === n2) {
             return
         }
@@ -535,14 +534,14 @@ export function createRenderer(options) {
                 processText(n1, n2, container, anchor);
                 break;
             case Fragment:
-                processFragment(n1, n2, container, anchor);
+                processFragment(n1, n2, container, parentComponent);
                 break;
             default:
                 if (shapeFlag & ShapeFlags.ELEMENT) {
-                    processElement(n1, n2, container, anchor);
+                    processElement(n1, n2, container, anchor, parentComponent);
                 } else if (shapeFlag & ShapeFlags.COMPONENT) {
                     // 对组件处理
-                    processComponent(n1, n2, container, anchor);
+                    processComponent(n1, n2, container, anchor, parentComponent);
                 }
 
                 break;
