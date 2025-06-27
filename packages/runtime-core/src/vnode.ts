@@ -15,9 +15,9 @@ export function createVNode(type, props = null, children = null) {
     const shapeFlag = isString(type)
         ? ShapeFlags.ELEMENT             // 元素
         : isObject(type)
-            ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件
+            ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件 (例如：setup)
             : isFunction(type)
-                ? ShapeFlags.FUNCTIONAL_COMPONENT  // 函数式组件 (setup)
+                ? ShapeFlags.FUNCTIONAL_COMPONENT  // 函数式组件传入一个函数
                 : 0
     const vnode = {
         __v_isVNode: true,

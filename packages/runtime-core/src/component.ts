@@ -15,7 +15,7 @@ export function createComponentInstance(
     vnode
 ) {
     const {
-        props: propsOptions = {}   // 组件的props，其为defineProps
+        props: propsOptions = {}   // 组件的props，其为defineProps(用户声明的props)
     } = vnode.type;   // type 是组件对象 { props: {}, render(){} } 
     // 同时vnode也有也有props，其为h函数参数传入的
 
@@ -30,10 +30,10 @@ export function createComponentInstance(
         subTree: null,         // 子树
         isMounted: false,      // 是否挂载完成
         update: null,          // 组件的更新函数
-        props: {},             // API defineProps的那个props
+        props: {},             // API defineProps的那个props(最终父组件传过来的，其属于propsOptions)
         attrs: {},             // propsOptions - props = attrs
         slots: {},             // 插槽
-        propsOptions,          // 组件的props，其为defineProps
+        propsOptions,          // 组件的props，其为defineProps(用户声明的props)
         component: null,
         proxy: null,           // 用来代理 props attrs data 方便访问
         setupState: {},        // setup函数返回的对象
