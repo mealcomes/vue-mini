@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+    <div id="root"></div>
+    <div id="root1"></div>
+    <div id="root2"></div>
+    <script type="module">
+        import {
+            // createRenderer,
+            // render,
+            // h,
+            // ref,
+            // onBeforeMount,
+            // onMounted,
+            // onBeforeUpdate,
+            // onUpdated,
+            // getCurrentInstance,
+            // provide,
+            // inject,
+        } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+
+        import {
+            rendererOptions,
+            render,
+            h,
+            Text,
+            Fragment,
+            ref,
+            onBeforeMount,
+            onMounted,
+            onBeforeUpdate,
+            onUpdated,
+            onBeforeUnmount,
+            onUnmounted,
+            getCurrentInstance,
+            provide,
+            inject,
+            Teleport,
+        } from './runtime-dom.js';
+
+        // Teleport 组件
+        // Teleport 需要维护两个部分，
+        // 一个是其本身的挂载位置和其内部children的挂载位置，一个是children内部相对位置
+        // 具体见 Teleport#TeleportImpl#process的组件更新分支注释
+        render(h(Teleport, { to: '#root' }, ['Hello ', 'Bilibili']), app);
+        setTimeout(() => {
+            render(h(Teleport, { to: '#root1' }, ['Hello ', 'Vue']), app);
+        }, 1000);
+        // 上面的例子 or 下面的例子
+        render(h('div', [
+            'root start',
+            h(Teleport, { to: '#root' }, ['Hello', 'Vue']),
+            'root end',
+        ]), app);
+        setTimeout(() => {
+            render(h('div', [
+                'root start',
+                h(Teleport, { to: '#root1' }, ['Hello', 'Vue']),
+                'root end',
+            ]), app);
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

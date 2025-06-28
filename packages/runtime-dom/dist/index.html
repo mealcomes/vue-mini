@@ -41,6 +41,7 @@
             getCurrentInstance,
             provide,
             inject,
+            Teleport,
         } from './runtime-dom.js';
 
         // // 生命周期钩子
@@ -173,33 +174,33 @@
         // }
         // render(h(functionComponent, {a: 1, b: 2}), app)
 
-        // `provide`和`inject`实现
-        // 父组件提供数据，后代组件获取该数据
-        // 父组件提供的什么类型的数据，后代组件便拿到什么数据
-        // 见 apiInject 文件
-        const P3 = {
-            setup(props) {
-                const title = inject('title');
-                const age = inject('age', 30);
-                return () => h(Fragment, [h('div', title.value), h('div', '不存在的属性age: ' + age)]);
-            }
-        };
-        const P2 = {
-            setup(props) {
-                return () => h(P3);
-            }
-        };
-        const P1 = {
-            setup(props) {
-                const title = ref('Hello Vue');
-                setTimeout(() => {
-                    title.value = 'Hello Bilibili';
-                }, 1000);
-                provide('title', title);
-                return () => h(P2);
-            }
-        }
-        render(h(P1), app);
+        // // `provide`和`inject`实现
+        // // 父组件提供数据，后代组件获取该数据
+        // // 父组件提供的什么类型的数据，后代组件便拿到什么数据
+        // // 见 apiInject 文件
+        // const P3 = {
+        //     setup(props) {
+        //         const title = inject('title');
+        //         const age = inject('age', 30);
+        //         return () => h(Fragment, [h('div', title.value), h('div', '不存在的属性age: ' + age)]);
+        //     }
+        // };
+        // const P2 = {
+        //     setup(props) {
+        //         return () => h(P3);
+        //     }
+        // };
+        // const P1 = {
+        //     setup(props) {
+        //         const title = ref('Hello Vue');
+        //         setTimeout(() => {
+        //             title.value = 'Hello Bilibili';
+        //         }, 1000);
+        //         provide('title', title);
+        //         return () => h(P2);
+        //     }
+        // }
+        // render(h(P1), app);
 
     </script>
 </body>

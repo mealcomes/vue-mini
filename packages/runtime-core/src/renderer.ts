@@ -8,11 +8,17 @@ import { shouldUpdateComponent, updateProps } from "./componentProps";
 import { renderComponentRoot } from "./componentRenderUtils";
 
 
+// dom 元素的移动类型
+export enum MoveType {
+    ENTER,   // 新节点进入
+    LEAVE,   // 旧节点离开
+    REORDER, // 节点在容器中重新排序
+}
+
 /*
 render ==> patch
 (根据不同类型进行不同的处理，例如Element、Text等,。其中Element 中可能包含子节点，此时调用mountChildren进行递归渲染)
 */
-
 export function createRenderer(options) {
     const {
         insert: hostInsert,
@@ -28,7 +34,7 @@ export function createRenderer(options) {
     } = options
 
     // 递归渲染子节点
-    const mountChildren = (children: Array<any>, container, parentComponent) => {
+    const mountChildren = (children: Array<any>, container, anchor, parentComponent) => {
         // 数组扁平化，避免嵌套
         // children = children.flat();  // 此处不能直接扁平化，意外扁平化获得的数组是一个新的数组，
         // 此时如果有一个children为text，那么最终children中不能对应变为vnode类型
@@ -38,7 +44,7 @@ export function createRenderer(options) {
             // 例如 <div>hello</div> 中的 hello 规范化为
             // { type: Symbol(v-txt), props: null, children: 'hello', shapeFlag: 8 }
             const child = (children[i] = normalizeVNode(children[i]));
-            patch(null, child, container, null, parentComponent);
+            patch(null, child, container, anchor, parentComponent);
         }
     }
 
@@ -69,7 +75,7 @@ export function createRenderer(options) {
         }
         // 处理数组类型的子节点
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-            mountChildren(vnode.children, el, parentComponent);
+            mountChildren(vnode.children, el, anchor, parentComponent);
         }
 
         hostInsert(el, container, anchor);
@@ -159,12 +165,12 @@ export function createRenderer(options) {
         }
     }
 
-    const processFragment = (n1, n2, container, parentComponent) => {
+    const processFragment = (n1, n2, container, anchor, parentComponent) => {
         if (n1 == null) {
-            mountChildren(n2.children, container, parentComponent);
+            mountChildren(n2.children, container, anchor, parentComponent);
         }
         else {
-            patchChildren(n1, n2, container, parentComponent);
+            patchChildren(n1, n2, container, anchor, parentComponent);
         }
     }
 
@@ -174,7 +180,7 @@ export function createRenderer(options) {
         }
         // n1已经存在(container上已经存在dom)，需要进行比对进行diff
         else {
-            patchElement(n1, n2, container, parentComponent);
+            patchElement(n1, n2, container, anchor, parentComponent);
         }
     }
 
@@ -455,7 +461,7 @@ export function createRenderer(options) {
 
     // 比对children进行diff
     // 进入该函数时，n1和n2的key与type一定是相同的
-    const patchChildren = (n1, n2, container, parentComponent) => {
+    const patchChildren = (n1, n2, container, anchor, parentComponent) => {
         const c1 = n1.children;
         const prevShapeFlag = n1 ? n1.shapeFlag : 0  // 拿到先前的类型
         const c2 = n2.children;
@@ -492,7 +498,7 @@ export function createRenderer(options) {
                 }
                 // 新的是数组，进行挂载
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                    mountChildren(c2, container, parentComponent);
+                    mountChildren(c2, container, anchor, parentComponent);
                 }
             }
         }
@@ -501,7 +507,7 @@ export function createRenderer(options) {
     // 进入该函数时，n1和n2的key与type一定是相同的
     // 1. 比较元素的差异，尽可能复用dom元素
     // 2. 比较属性和元素的子节点
-    const patchElement = (n1, n2, container, parentComponent) => {
+    const patchElement = (n1, n2, container, anchor, parentComponent) => {
         let el = (n2.el = n1.el);  // dom 复用
 
         let oldProps = n1.props || {};
@@ -511,7 +517,7 @@ export function createRenderer(options) {
         patchProp(oldProps, newProps, el);
 
         // 比对子节点(第三个参数传的是el而不是container)
-        patchChildren(n1, n2, el, parentComponent);
+        patchChildren(n1, n2, el, anchor, parentComponent);
     }
 
     const patch = (n1, n2, container, anchor = null, parentComponent = null) => {
@@ -534,11 +540,20 @@ export function createRenderer(options) {
                 processText(n1, n2, container, anchor);
                 break;
             case Fragment:
-                processFragment(n1, n2, container, parentComponent);
+                processFragment(n1, n2, container, anchor, parentComponent);
                 break;
             default:
                 if (shapeFlag & ShapeFlags.ELEMENT) {
                     processElement(n1, n2, container, anchor, parentComponent);
+                } else if (shapeFlag & ShapeFlags.TELEPORT) {
+                    type.process(
+                        n1,
+                        n2,
+                        container,
+                        anchor,
+                        parentComponent,
+                        internals
+                    )
                 } else if (shapeFlag & ShapeFlags.COMPONENT) {
                     // 对组件处理
                     processComponent(n1, n2, container, anchor, parentComponent);
@@ -568,6 +583,12 @@ export function createRenderer(options) {
 
         if (vnode.type === Fragment) {
             unmountChildren(vnode.children);
+        } else if (shapeFlag & ShapeFlags.TELEPORT) {
+            // TELEPORT组件卸载则调用其内部的remove函数
+            vnode.type.remove(
+                vnode,
+                internals
+            )
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
             const { bum, um } = vnode.component;
 
@@ -583,11 +604,56 @@ export function createRenderer(options) {
             if (um) {
                 invokeArrayFns(um);
             }
-        }
-        else {
+        } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            // 当类型为ARRAY_CHILDREN且children中包含Teleport组件的时候，
+            // 如果不通过这种方式进行移除，会导致Teleport内部的组件无法被正常卸载
+            unmountChildren(vnode.children);
+        } else {
             const { el } = vnode;
             el && hostRemove(el);
         }
+    }
+
+    // 将组件或者dom元素移动到指定位置
+    const move = (vnode, container, anchor) => {
+        const { el, type, children, shapeFlag } = vnode
+
+        // 如果是移动组件类型的话，就移动其subTree
+        if (shapeFlag & ShapeFlags.COMPONENT) {
+            move(vnode.component!.subTree, container, anchor)
+            return
+        }
+
+        // 如果是移动Teleport组件类型的话，就调用Teleport的move
+        if (shapeFlag & ShapeFlags.TELEPORT) {
+            type.move(vnode, container, anchor, internals)
+            return
+        }
+
+        if (type === Fragment) {
+            hostInsert(el!, container, anchor)
+            for (let i = 0; i < children.length; i++) {
+                move(children[i], container, anchor)
+            }
+            hostInsert(vnode.anchor!, container, anchor)
+            return
+        }
+
+        // 到这里就是单个的dom元素，直接进行移动，其实就是将dom元素插入到新的container中
+        hostInsert(el!, container, anchor);
+    }
+
+    // Teleport.process传参
+    const internals = {
+        p: patch,
+        um: unmount,
+        m: move,
+        // r: remove,
+        mt: mountComponent,
+        mc: mountChildren,
+        pc: patchChildren,
+        // n: getNextHostNode,
+        o: options,
     }
 
     // 将虚拟节点变为真实节点进行渲染
@@ -661,3 +727,4 @@ function getSequence(arr: number[]): number[] {
     }
     return result;
 }
+

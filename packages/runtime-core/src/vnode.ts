@@ -1,4 +1,5 @@
 import { isArray, isFunction, isObject, isOn, isString, normalizeClass, normalizeStyle, ShapeFlags } from "@vue/shared";
+import { isTeleport } from "./components/Teleport";
 
 export const Text: unique symbol = Symbol.for('v-txt');
 export const Fragment = Symbol.for('v-fgt');
@@ -14,11 +15,13 @@ export function isSameVNodeType(n1, n2) {
 export function createVNode(type, props = null, children = null) {
     const shapeFlag = isString(type)
         ? ShapeFlags.ELEMENT             // 元素
-        : isObject(type)
-            ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件 (例如：setup)
-            : isFunction(type)
-                ? ShapeFlags.FUNCTIONAL_COMPONENT  // 函数式组件传入一个函数
-                : 0
+        : isTeleport(type)
+            ? ShapeFlags.TELEPORT        // Teleport 组件
+            : isObject(type)
+                ? ShapeFlags.STATEFUL_COMPONENT  // 状态组件 (例如：setup)
+                : isFunction(type)
+                    ? ShapeFlags.FUNCTIONAL_COMPONENT  // 函数式组件传入一个函数
+                    : 0
     const vnode = {
         __v_isVNode: true,
         type,
