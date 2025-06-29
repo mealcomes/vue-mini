@@ -1,4 +1,4 @@
-import { isArray, ShapeFlags } from "@vue/shared";
+import { isArray, isFunction, ShapeFlags } from "@vue/shared";
 import { normalizeVNode } from "./vnode";
 
 export const initSlots = (instance, children) => {
@@ -19,4 +19,45 @@ export const initSlots = (instance, children) => {
             : [normalizeVNode(children)]
         instance.slots.default = () => normalized;
     }
+}
+
+export const updateSlots = (instance, children) => {
+    const { vnode, slots } = instance;
+    if (vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+        // children 为手写的插槽，对其进行规范化（确保每个插槽是函数），并插入到instances.slots上
+        normalizeObjectSlots(children, slots)
+    } else if (children) {
+        // 不是插槽对象，说明父组件直接传了 VNode (没有使用插槽语法)，直接将其作为default插槽处理
+        normalizeVNodeSlots(instance, children);
+    }
+}
+
+// 对手写的slots进行规范化处理，保证每个插槽都是一个函数(rawSlots是未规范化的插槽)
+const normalizeObjectSlots = (rawSlots, slots) => {
+    for (const key in rawSlots) {
+        if (key[0] === '_') continue;
+        const value = rawSlots[key];
+        if (isFunction(value)) {
+            slots[key] = value;
+        } else if (value != null) {
+            // 插槽对象不为空但不是函数
+            console.warn(
+                `Non-function value encountered for slot "${key}". ` +
+                `Prefer function slots for better performance.`,
+            )
+            const normalized = normalizeSlotValue(value);
+            slots[key] = () => normalized;
+        }
+    }
+}
+
+const normalizeVNodeSlots = (instance, children) => {
+    const normalized = normalizeSlotValue(children);
+    instance.slots.default = () => normalized;
+}
+
+const normalizeSlotValue = (value) => {
+    return isArray(value)
+    ? value.map(normalizeVNode)
+    : normalizeVNode(value);
 }

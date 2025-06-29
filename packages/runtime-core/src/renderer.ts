@@ -6,6 +6,7 @@ import { queueJob } from "./scheduler";
 import { createComponentInstance, setupComponent } from "./component";
 import { shouldUpdateComponent, updateProps } from "./componentProps";
 import { renderComponentRoot } from "./componentRenderUtils";
+import { updateSlots } from "./componentSlots";
 
 
 // dom 元素的移动类型
@@ -233,6 +234,7 @@ export function createRenderer(options) {
         instance.vnode = nextVNode;   // 进行虚拟节点复用
         instance.next = null;  //清空next
         updateProps(instance, nextVNode.props, prevProps);
+        updateSlots(instance, nextVNode.children);
     }
 
     const patchProp = (oldProps, newProps, el) => {
