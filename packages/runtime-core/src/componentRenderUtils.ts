@@ -8,6 +8,8 @@ export function renderComponentRoot(instance) {
         vnode,
         proxy,
         attrs,
+        slots,
+        emit,
     } = instance;
 
     let result;
@@ -25,7 +27,7 @@ export function renderComponentRoot(instance) {
         // 函数式组件
         const render = Component as Function;
         result = normalizeVNode(
-            render(attrs)
+            render(attrs, { slots, emit })
         );
     }
 
