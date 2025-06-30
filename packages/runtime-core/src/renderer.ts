@@ -50,7 +50,7 @@ export function createRenderer(options) {
     }
 
     const mountElement = (vnode, container, anchor, parentComponent) => {
-        const { type, props, shapeFlag, children } = vnode;
+        const { type, props, shapeFlag, transition } = vnode;
 
         // 第一次渲染时，让 vnode.el 指向真实的 DOM 元素
         let el = (vnode.el = hostCreateElement(type));
@@ -79,7 +79,15 @@ export function createRenderer(options) {
             mountChildren(vnode.children, el, anchor, parentComponent);
         }
 
+        if (transition) {
+            transition.beforeEnter(el);
+        }
+
         hostInsert(el, container, anchor);
+
+        if (transition) {
+            transition.enter(el);
+        }
     }
 
     // 结合index.html#8,#9
@@ -581,7 +589,7 @@ export function createRenderer(options) {
     }
 
     const unmount = (vnode) => {
-        const { shapeFlag } = vnode;
+        const { shapeFlag, transition, el } = vnode;
 
         if (vnode.type === Fragment) {
             unmountChildren(vnode.children);
@@ -611,8 +619,18 @@ export function createRenderer(options) {
             // 如果不通过这种方式进行移除，会导致Teleport内部的组件无法被正常卸载
             unmountChildren(vnode.children);
         } else {
-            const { el } = vnode;
-            el && hostRemove(el);
+
+            const performRemove = () => {
+                hostRemove(el!)
+                if (transition && transition.afterLeave) {
+                    transition.afterLeave()
+                }
+            }
+            if (transition) {
+                transition.leave(el, performRemove);
+            } else {
+                performRemove();
+            }
         }
     }
 

@@ -6,6 +6,7 @@ export const isTeleport = (type) => type.__isTeleport;
 const isTeleportDisabled = (props): boolean =>
     props && (props.disabled || props.disabled === '')
 
+// 获取target对应的dom元素
 const resolveTarget = (
     props,
     select,

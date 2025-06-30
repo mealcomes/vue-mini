@@ -19,4 +19,5 @@ export const render = (...args) => {
     ensureRenderer().render(...args);
 }
 
+export * from './components/Transition'
 export * from '@vue/runtime-core';

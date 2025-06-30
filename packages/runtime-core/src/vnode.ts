@@ -62,7 +62,6 @@ export function normalizeVNode(child) {
     }
 }
 
-
 export function mergeProps(...args) {
     const ret: any = {}
     for (let i = 0; i < args.length; i++) {
