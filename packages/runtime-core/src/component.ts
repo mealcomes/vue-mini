@@ -92,7 +92,7 @@ export function setupComponent(
     const isStateful = isStatefulComponent(instance);
 
     // 根据 h函数传入的props 区分出 组件的props(defineProps)和attrs
-    initProps(instance, props);
+    initProps(instance, props, isStateful);
     initSlots(instance, children);
 
     if (isStateful) {

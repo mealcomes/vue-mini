@@ -2,7 +2,7 @@ import { reactive } from "@vue/reactivity";
 
 
 // rawProps为instance.vnode.props，即 h 函数传入的props，我们需要将其分成组件的props(defineProps)和attrs
-export function initProps(instance, rawProps) {
+export function initProps(instance, rawProps, isStateful) {
     const props = {};
     const attrs = Object.create({});
     const propsOptions = instance.propsOptions || {};  // 组件中定义的defineProps
@@ -22,8 +22,21 @@ export function initProps(instance, rawProps) {
             }
         }
     }
+    if (isStateful) {
+        // 如果是状态组件(setup)
+        instance.props = reactive(props);  // 其实props不需要深度代理，且组件不能更改props(单向数据流)
+    } else {
+        // 函数式组件
+        if (!instance.type.props) {
+            // 没有声明 props -> 所有传入的都当作 attrs
+            instance.props = attrs;
+        } else {
+            // 有声明 props -> 用 props
+            instance.props = props;
+        }
+    }
+    
     instance.attrs = attrs;
-    instance.props = reactive(props);  // 其实props不需要深度代理，且组件不能更改props(单向数据流)
 }
 
 export function updateProps(instance, rawProps, rawPrevProps) {
