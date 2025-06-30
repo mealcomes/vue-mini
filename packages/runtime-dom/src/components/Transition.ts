@@ -191,6 +191,9 @@ export function resolveTransitionProps(rawProps) {
         },
         onEnter: makeEnterHook(false),
         onAppear: makeEnterHook(true),
+        /**
+         * 此处done函数是在renderer#mountElement中传入的
+         */
         onLeave(el, done) {
             el._isLeaving = true;
             const resolve = () => finishLeave(el, done);
@@ -212,10 +215,16 @@ export function resolveTransitionProps(rawProps) {
                 // 这样就会根据activeClass设置的transition进行动画播放
                 removeTransitionClass(el, leaveFromClass);
                 addTransitionClass(el, leaveToClass);
+                // 如果用户传入的onLeave钩子参数个数为2，则说明用户需要自己管理done，
+                // 否则监听动画结束进行resolve
                 if (!onLeave || onLeave.length <= 1) {
                     el.addEventListener('transitionend', resolve);
                 }
             });
+            // 调用用户传入的onLeave钩子
+            // 用户传入的onLeave可能没有resolve(done)，
+            // 此时我们便在nextFrame中对其进行判断来决定我们自己调用resolve，还是用户自己管理resolve
+            callHook(onLeave, [el, resolve]); 
         },
         onEnterCancelled(el) {
             finishEnter(el, false, undefined, true)
