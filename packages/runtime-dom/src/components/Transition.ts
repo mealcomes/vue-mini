@@ -252,6 +252,7 @@ const decorate = (t: typeof Transition) => {
 
 // Transition组件是BaseTransition的一个实现，存在于runtime-dom包下
 // BaseTransition属于runtime-core包下
+// Transition组件是一个函数式组件
 export const Transition = decorate(
     (props, { slots }) =>
         h(BaseTransition, resolveTransitionProps(props), slots)

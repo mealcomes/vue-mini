@@ -619,7 +619,6 @@ export function createRenderer(options) {
             // 如果不通过这种方式进行移除，会导致Teleport内部的组件无法被正常卸载
             unmountChildren(vnode.children);
         } else {
-
             const performRemove = () => {
                 hostRemove(el!)
                 if (transition && transition.afterLeave) {

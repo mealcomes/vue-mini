@@ -84,6 +84,9 @@
 
         // Transition 组件
         const props = {
+            onAppear(el) {
+                console.log('appear', arguments);
+            },
             onBeforeEnter(el) {
                 console.log('before enter', arguments);
             },
@@ -92,7 +95,11 @@
             },
             onLeave(el) {
                 console.log('leave', arguments);
-            }
+            },
+            // 由于appear为true，则一开始的时候调用的是onAppear而不是onEnter
+            // 但onBeforeAppear未设置，所有依旧会调用onBeforeEnter
+            // 即appear未true时，优先调用onAppear相关，没有设置则降级调用onEnter相关
+            appear: true, 
         }
         render(h(Transition, props, {
             default: () => {
