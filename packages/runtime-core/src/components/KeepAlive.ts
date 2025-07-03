@@ -79,6 +79,7 @@ const KeepAliveImpl = {
         }
 
         // 在渲染完成后，缓存KeepAlive内部children组件，即subTree
+        // ctrl+点击 见赋值处
         let pendingCacheKey = null;
         const cacheSubtree = () => {
             if (pendingCacheKey != null) {
@@ -89,14 +90,26 @@ const KeepAliveImpl = {
         onUpdated(cacheSubtree);
 
         onBeforeUnmount(() => {
+            // 当 <KeepAlive> 所在的父组件被销毁时，它自身也会被卸载
+            // 此时：所有被缓存的组件实例也需要处理
+            // 但当前正在展示的那个组件（active vnode）不能直接卸载
+            // 先将 active vnode 的shapeFlag重置，等其后续正常卸载
             cache.forEach(cached => {
-                const { subTree: vnode, suspense } = instance;
+                const { subTree: vnode } = instance;
+                if (isSameVNodeType(cached, vnode)) {
+                    resetShapeFlag(vnode);
+                    return;
+                }
+                unmount(cached);
             });
         });
 
         return () => {
+            // 先重置pendingCacheKey
+            pendingCacheKey = null;
+
             if (!slots.default) {
-                return (current = null)
+                return (current = null);
             }
             const vnode = slots.default();
 

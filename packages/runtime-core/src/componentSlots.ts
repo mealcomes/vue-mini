@@ -58,6 +58,6 @@ const normalizeVNodeSlots = (instance, children) => {
 
 const normalizeSlotValue = (value) => {
     return isArray(value)
-    ? value.map(normalizeVNode)
-    : normalizeVNode(value);
+        ? value.map(normalizeVNode)
+        : normalizeVNode(value);
 }
