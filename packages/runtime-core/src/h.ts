@@ -38,7 +38,7 @@ export function h(type, propsOrChildren, children) {
                 // h(type, vnode)
                 return createVNode(type, null, [propsOrChildren]);
             }
-            // props
+            // props、没有children
             return createVNode(type, propsOrChildren);
         } else {
             // h(type, children)
