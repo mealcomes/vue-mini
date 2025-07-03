@@ -5,7 +5,14 @@ import {
 } from './component'
 
 
-export function injectHook(type, hook, target) {
+export function injectHook(
+    type, 
+    hook, 
+    target, 
+    // 当prepend为true时，会将钩子往instance上的钩子数组头部添加，
+    // 见KeepAlive#injectToKeepAliveRoot
+    prepend: boolean = false, 
+) {
     if (target) {
         // 当前钩子是在组件中运行的
         // 看当前钩子是否已经存放，且会存在多个钩子函数
@@ -23,7 +30,11 @@ export function injectHook(type, hook, target) {
             reset()
             return res
         }
-        hooks.push(wrappedHook);
+        if (prepend) {
+            hooks.unshift(wrappedHook);  // 往数组头部添加钩子
+        } else {
+            hooks.push(wrappedHook);
+        }
         return wrappedHook;
     } else {
         console.warn(`${type} is called when there is no active component instance 

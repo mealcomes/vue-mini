@@ -59,7 +59,9 @@
             inject,
             Teleport,
             Transition,
-            KeepAlive
+            KeepAlive,
+            onActivated,
+            onDeactivated,
         } from './runtime-dom.js';
 
         // // Teleport 组件
@@ -129,15 +131,26 @@
         // 1.组件不会被重新创建，会将上次的结果拿出来返回
         // 2.组件不会被卸载，而是将dom移除掉
         // 3.内部需要缓存dom
+        // 注意：KeepAlive组件只会缓存其根组件的dom元素，
+        // 如果其根组件的子组件发生了卸载，那么其不会被缓存，走的是正常的卸载挂在流程
+        // (参见 KeepAlive.ts#injectToKeepAliveRoot)
         const A1 = {
             setup(props) {
+                const age = ref(0);
                 onMounted(() => {
                     console.log('A1 mounted');
                 });
                 onUnmounted(() => {
                     console.log('A1 unmount');
-                })
-                const age = ref(0);
+                });
+                onActivated(() => {
+                    console.log('A1 activated');
+                    console.log(getCurrentInstance().subTree.el);
+                    age.value++;
+                });
+                onDeactivated(() => {
+                    console.log('A1 deactivated');
+                });
                 return () => {
                     return h('div', [
                         h('p', '我是a1，我的值现在是: ' + age.value),
@@ -154,6 +167,12 @@
                 onUnmounted(() => {
                     console.log('A2 unmount');
                 })
+                onActivated(() => {
+                    console.log('A2 activated');
+                });
+                onDeactivated(() => {
+                    console.log('A2 deactivated');
+                });
                 return () => {
                     return h('h1', '我是a2');
                 }

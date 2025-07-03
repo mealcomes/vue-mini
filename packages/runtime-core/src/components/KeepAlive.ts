@@ -1,7 +1,9 @@
-import { ShapeFlags } from "@vue/shared";
-import { onBeforeUnmount, onMounted, onUpdated } from "../apiLifecycle";
-import { getCurrentInstance } from "../component";
+import { invokeArrayFns, ShapeFlags } from "@vue/shared";
+import { injectHook, onBeforeUnmount, onMounted, onUnmounted, onUpdated } from "../apiLifecycle";
+import { currentInstance, getCurrentInstance } from "../component";
 import { isSameVNodeType } from "../vnode";
+import { LifecycleHooks } from "../enums";
+import { queuePostFlushCb } from "../scheduler";
 
 export const isKeepAlive = (vnode): boolean =>
     vnode.type.__isKeepAlive
@@ -48,17 +50,31 @@ const KeepAliveImpl = {
                 anchor,
                 instance,
             );
+            // activated 钩子函数执行
+            queuePostFlushCb(() => {
+                instance.isDeactivated = false;
+                if (instance.a) {
+                    invokeArrayFns(instance.a);
+                }
+            });
         }
 
         sharedContext.deactivate = (vnode) => {
+            const instance = vnode.component!;
             // 组件失活时，将组件的dom元素临时移动到一个用于存储的div中
             // 此时组件的subtree.el仍然指向该dom，只是dom的位置变了而已
             move(vnode, storageContainer, null);
+            // deactivated 钩子函数执行
+            queuePostFlushCb(() => {
+                if (instance.da) {
+                    invokeArrayFns(instance.da);
+                }
+            });
         }
 
         function unmount(vnode) {
             // 先移除与KeepAlive相关的shapeFlag(不然删不掉的)
-            resetShapeFlag(vnode);  
+            resetShapeFlag(vnode);
             _unmount(vnode, instance);
         }
 
@@ -154,7 +170,7 @@ const KeepAliveImpl = {
             // 将当前正处于激活状态的组件赋值给current，
             // 用于防止当出现cache.size > max进行真正的unmount组件时，
             // 将当前正处于激活状态的组件给删了(见pruneCacheEntry函数)
-            current = vnode;  
+            current = vnode;
             return vnode;
         }
     }
@@ -170,6 +186,86 @@ export const KeepAlive = KeepAliveImpl as unknown as {
         }
     }
 };
+
+export function onActivated(
+    hook,
+    target?,
+): void {
+    registerKeepAliveHook(hook, LifecycleHooks.ACTIVATED, target);
+}
+
+export function onDeactivated(
+    hook,
+    target?,
+): void {
+    registerKeepAliveHook(hook, LifecycleHooks.DEACTIVATED, target);
+}
+
+/**
+ * 将用户定义的 KeepAlive 钩子注册到实例上
+ */
+function registerKeepAliveHook(
+    hook,
+    type,
+    target = currentInstance,
+) {
+    const wrappedHook = () => {
+        // 只有当 target 不位于 deactivated 分支上，才会进行钩子调用
+        // 所以后续在调用本钩子时，就从本钩子所在实例网上找，
+        // 如果找到了一个父实例是 deactivated，就直接返回，不执行用户传入的钩子
+        let current = target;
+        while (current) {
+            if (current.isDeactivated) {
+                return;
+            }
+            current = current.parent;
+        }
+        return hook();
+    };
+
+    // 将包装过后的钩子放到当前实例(即正在执行 setup 的组件实例)上
+    // injectHook 函数也就是组件其他生命钩子的注入函数
+    injectHook(type, wrappedHook, target); 
+
+    // 将钩子注入到对应 KeepAlive 组件的根组件中去，这样后续只用遍历根组件的钩子数组依次进行调用即可
+    if (target) {
+        let current = target.parent
+        while (current && current.parent) {
+            if (isKeepAlive(current.parent.vnode)) {
+                // 如果父组件是 KeepAlive 组件，则说明当前组件是根组件
+                injectToKeepAliveRoot(wrappedHook, type, target, current)
+            }
+            current = current.parent
+        }
+    }
+}
+
+/**
+ * 将KeepAlive相关钩子注入到KeepAlive的根组件中
+ */
+function injectToKeepAliveRoot(
+    hook,
+    type,
+    target,
+    keepAliveRoot,
+) {
+    // 需要往钩子列表的头部插入该钩子函数(即prepend为true)
+    // 钩子函数的执行是从钩子数组的开始往后执行的，并且钩子函数的注入顺序是先父组件再子组件
+    // 当KeepAlive的根组件注册了onActivate，其子组件也注册了该钩子
+    // 如果不往钩子列表头部插入钩子，就会导致钩子触发时根组件先于子组件被调用
+    // 但这是不符合要求的，因为子组件的更新是先于根组件的，
+    // 对应的 onActivate 也应该是子组件先于父组件被调用
+    // 注意：子组件定义 KeepAlive 相关钩子时，
+    // 其只会在对应 KeepAlive 根组件发生 activate 或 inactivate 时才会被触发
+    // (参见components.html对应处的注意事项)
+    const injected = injectHook(type, hook, keepAliveRoot, true);
+    onUnmounted(() => {
+        const i = keepAliveRoot[type]!.indexOf(injected);
+        if (i > -1) {
+            keepAliveRoot[type]!.splice(i, 1);
+        }
+    }, target);
+}
 
 /**
  * 移除组件shapeFlag中与KeepAlive相关的值
