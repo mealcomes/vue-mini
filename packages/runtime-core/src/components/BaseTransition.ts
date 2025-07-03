@@ -61,11 +61,13 @@ const BaseTransitionImpl = {
         const state = useTransitionState();
 
         return () => {
-            const child =
+            const children =
                 slots.default && slots.default();
-            if (!child) {
+            if (!children || !children.length) {
                 return
             }
+
+            const child = children[0];  // 此处由于slots被规范化，故default拿到的是数组
 
             // 再次对钩子函数进行包装(例如appear的实现)
             let enterHooks = resolveTransitionHooks(props, state);

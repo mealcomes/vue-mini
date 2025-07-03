@@ -2,9 +2,11 @@ import { isArray, isFunction, ShapeFlags } from "@vue/shared";
 import { normalizeVNode } from "./vnode";
 
 export const initSlots = (instance, children) => {
+    const slots = (instance.slots = {});
     if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
         // VNode 类型为插槽数组时，便将children直接赋值给instance.slots
-        instance.slots = children;
+        // instance.slots = children;
+        normalizeObjectSlots(children, slots);
     } else if (children) {
         // VNode 不为SLOTS_CHILDREN，但是有 children，就将其赋为default插槽。如下：
         // <template>
@@ -14,10 +16,7 @@ export const initSlots = (instance, children) => {
         // </template>
         // 其中的<div>我是默认插槽内容</div>便被赋值为默认插槽
         // 但一般这里只有在模板编译后才会出现这个
-        const normalized = isArray(children)
-            ? children.map(normalizeVNode)
-            : [normalizeVNode(children)]
-        instance.slots.default = () => normalized;
+        normalizeVNodeSlots(instance, children);
     }
 }
 
@@ -38,7 +37,9 @@ const normalizeObjectSlots = (rawSlots, slots) => {
         if (key[0] === '_') continue;
         const value = rawSlots[key];
         if (isFunction(value)) {
-            slots[key] = value;
+            slots[key] = (...args) => {
+                return normalizeSlotValue(value(...args))
+            };
         } else if (value != null) {
             // 插槽对象不为空但不是函数
             console.warn(
@@ -59,5 +60,5 @@ const normalizeVNodeSlots = (instance, children) => {
 const normalizeSlotValue = (value) => {
     return isArray(value)
         ? value.map(normalizeVNode)
-        : normalizeVNode(value);
+        : [normalizeVNode(value)];
 }

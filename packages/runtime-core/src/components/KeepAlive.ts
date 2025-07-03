@@ -111,8 +111,12 @@ const KeepAliveImpl = {
             if (!slots.default) {
                 return (current = null);
             }
-            const vnode = slots.default();
+            const children = slots.default();
+            if (!children || !children.length) {
+                return (current = null);
+            }
 
+            const vnode = children[0];  // 此处由于slots被规范化，故default拿到的是数组
             const comp = vnode.type;
 
             const { include, exclude, max } = props
