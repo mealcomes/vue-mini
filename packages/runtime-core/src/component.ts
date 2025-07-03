@@ -42,6 +42,7 @@ export function createComponentInstance(
 
         emit: null,            // 组件的发布事件函数
 
+        ctx: {},               // KeepAlive组件的dom API，见renderer.ts中的mountElement
         data: {},              // 响应式数据，vue2中的data函数返回的对象
         props: {},             // API defineProps的那个props(最终父组件传过来的，其属于propsOptions)
         attrs: {},             // propsOptions - props = attrs
@@ -56,6 +57,8 @@ export function createComponentInstance(
         um: null,
         bum: null,
     }
+
+    instance.ctx = { _: instance };
 
     // 通过合成eventName，再找到父组件onEventName属性对应的函数并对其进行调用
     instance.emit = function (event: string, ...args) {

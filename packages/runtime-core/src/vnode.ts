@@ -33,15 +33,17 @@ export function createVNode(type, props = null, children = null) {
         ref: props?.ref,     // 组件上的ref，见index.html下ref原理相关代码
     }
 
+    // children规范化
     if (children) {
         if (isArray(children)) {
             vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
-        }
-        else if (isObject(children)) {
+        } else if (isObject(children)) {
             // h 函数第三个参数是对象，则代表其为slots
             vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN;
-        }
-        else {
+        } else if (isFunction(children)) {
+            vnode.children = { default: children }
+            vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN
+        } else {
             children = String(children);
             vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;
         }

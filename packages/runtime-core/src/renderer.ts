@@ -7,6 +7,7 @@ import { createComponentInstance, setupComponent } from "./component";
 import { shouldUpdateComponent, updateProps } from "./componentProps";
 import { renderComponentRoot } from "./componentRenderUtils";
 import { updateSlots } from "./componentSlots";
+import { isKeepAlive } from "./components/KeepAlive";
 
 
 // dom 元素的移动类型
@@ -32,7 +33,7 @@ export function createRenderer(options) {
         setElementText: hostSetElementText,
         parentNode: hostParentNode,
         nextSibling: hostNextSibling,
-    } = options
+    } = options;
 
     // 递归渲染子节点
     const mountChildren = (children: Array<any>, container, anchor, parentComponent) => {
@@ -93,6 +94,11 @@ export function createRenderer(options) {
     // 结合index.html#8,#9
     const mountComponent = (vnode, container, anchor, parentComponent) => {
         const instance = (vnode.component = createComponentInstance(vnode, parentComponent))
+
+        // 如果是KeepAlive组件，便将dom操作API注入到ctx中
+        if (isKeepAlive(vnode)) {
+            (instance.ctx as any).renderer = internals;
+        }
 
         // 初始化instance.props和instance.attrs
         setupComponent(instance);
@@ -195,13 +201,20 @@ export function createRenderer(options) {
 
     const processComponent = (n1, n2, container, anchor, parentComponent) => {
         if (n1 == null) {
-            // 组件渲染
-            mountComponent(
-                n2,
-                container,
-                anchor,
-                parentComponent
-            )
+            if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+                // 如果是KeepAlive组件的子组件，则走activate
+                // 此时parentComponent便是KeepAlive组件本身
+                // 其在KeepAlive.ts的setup中为其子组件加入了ShapeFlags.COMPONENT_KEPT_ALIVE
+                parentComponent!.ctx.activate(n2, container, anchor);
+            } else {
+                // 组件渲染
+                mountComponent(
+                    n2,
+                    container,
+                    anchor,
+                    parentComponent
+                )
+            }
         } else {
             // 组件更新
             updateComponent(n1, n2);
@@ -261,14 +274,14 @@ export function createRenderer(options) {
         }
     }
 
-    const unmountChildren = (children) => {
+    const unmountChildren = (children, parentComponent) => {
         for (let i = 0; i < children.length; i++) {
-            unmount(children[i]);
+            unmount(children[i], parentComponent);
         }
     }
 
     // 全量diff算法
-    const patchKeyedChildren = (c1, c2, el) => {
+    const patchKeyedChildren = (c1, c2, el, parentAnchor, parentComponent) => {
         let i = 0; // 开始比对的索引
         let e1 = c1.length - 1; // c1的尾部索引
         let e2 = c2.length - 1; // c2的尾部索引
@@ -345,7 +358,7 @@ export function createRenderer(options) {
             // 如果有，则说明是多于节点是卸载在最前面  (a b) c ==> (a b)
             // 如果没有，则说明是卸载在最后面 (a b) c ==> c (a b)
             while (i <= e1) {
-                unmount(c1[i]);
+                unmount(c1[i], parentComponent);
                 i++;
             }
         }
@@ -388,7 +401,7 @@ export function createRenderer(options) {
 
                 // 如果新的里面找不到，则说明老的有的要删除
                 if (newIndex == undefined) {
-                    unmount(preChild);
+                    unmount(preChild, parentComponent);
                 }
                 // 否则，就进行dom复用，patch中会比较复用dom节点的差异，更新属性并递归更新儿子
                 else {
@@ -482,7 +495,7 @@ export function createRenderer(options) {
 
             // 如果旧的是数组，则卸载旧的
             if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-                unmountChildren(c1);
+                unmountChildren(c1, parentComponent);
             }
             // 否则直接文本赋值(如果旧的是文本则会进行覆盖)
             if (c1 !== c2) {
@@ -493,11 +506,11 @@ export function createRenderer(options) {
                 // 旧的是数组，新的是数组
                 if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
                     // 全量diff算法，两数组进行比对
-                    patchKeyedChildren(c1, c2, container);
+                    patchKeyedChildren(c1, c2, container, anchor, parentComponent);
                 }
                 // 旧的是数组，新的不是数组也不是文本，直接卸载旧的
                 else {
-                    unmountChildren(c1);
+                    unmountChildren(c1, parentComponent);
                 }
             } else {
                 // 旧的不是数组
@@ -537,7 +550,7 @@ export function createRenderer(options) {
 
         if (n1 && !isSameVNodeType(n1, n2)) {
             // 如果类型不同，则卸载旧节点
-            unmount(n1);
+            unmount(n1, parentComponent);
             // n1 赋为null，走新的渲染逻辑
             n1 = null;
         }
@@ -588,11 +601,16 @@ export function createRenderer(options) {
 
     }
 
-    const unmount = (vnode) => {
+    const unmount = (vnode, parentComponent) => {
         const { shapeFlag, transition, el } = vnode;
 
+        if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+            parentComponent!.ctx.deactivate(vnode);
+            return
+        }
+
         if (vnode.type === Fragment) {
-            unmountChildren(vnode.children);
+            unmountChildren(vnode.children, parentComponent);
         } else if (shapeFlag & ShapeFlags.TELEPORT) {
             // TELEPORT组件卸载则调用其内部的remove函数
             vnode.type.remove(
@@ -608,7 +626,7 @@ export function createRenderer(options) {
             }
 
             // 组件的卸载是删除subTree
-            unmount(vnode.component.subTree);
+            unmount(vnode.component.subTree, parentComponent);
 
             // 执行Unmounted钩子
             if (um) {
@@ -617,7 +635,7 @@ export function createRenderer(options) {
         } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
             // 当类型为ARRAY_CHILDREN且children中包含Teleport组件的时候，
             // 如果不通过这种方式进行移除，会导致Teleport内部的组件无法被正常卸载
-            unmountChildren(vnode.children);
+            unmountChildren(vnode.children, parentComponent);
         } else {
             const performRemove = () => {
                 hostRemove(el!)
@@ -683,7 +701,7 @@ export function createRenderer(options) {
         if (vnode == null) {
             if (container._vnode) {
                 // 如果vnode为null，说明需要卸载组件
-                unmount(container._vnode);
+                unmount(container._vnode, null);
             }
         }
         else {

@@ -38,6 +38,7 @@
         //     inject,
         //     Teleport,
         //     Transition,
+        //     KeepAlive,
         // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
 
         import {
@@ -58,6 +59,7 @@
             inject,
             Teleport,
             Transition,
+            KeepAlive
         } from './runtime-dom.js';
 
         // // Teleport 组件
@@ -82,49 +84,94 @@
         //     ]), app);
         // }, 1000);
 
-        // Transition 组件
-        const props = {
-            onAppear(el) {
-                console.log('appear', arguments);
-            },
-            onBeforeEnter(el) {
-                console.log('before enter', arguments);
-            },
-            onEnter(el) {
-                console.log('enter', arguments);
-            },
-            onLeave(el) {
-                console.log('leave', arguments);
-            },
-            // 由于appear为true，则一开始的时候调用的是onAppear而不是onEnter
-            // 但onBeforeAppear未设置，所有依旧会调用onBeforeEnter
-            // 即appear未true时，优先调用onAppear相关，没有设置则降级调用onEnter相关
-            appear: true, 
-        }
-        render(h(Transition, props, {
-            default: () => {
-                return h('div', {
-                    style: {
-                        width: '100px',
-                        height: '100px',
-                        background: 'red'
-                    }
+        // // Transition 组件
+        // const props = {
+        //     onAppear(el) {
+        //         console.log('appear', arguments);
+        //     },
+        //     onBeforeEnter(el) {
+        //         console.log('before enter', arguments);
+        //     },
+        //     onEnter(el) {
+        //         console.log('enter', arguments);
+        //     },
+        //     onLeave(el) {
+        //         console.log('leave', arguments);
+        //     },
+        //     // 由于appear为true，则一开始的时候调用的是onAppear而不是onEnter
+        //     // 但onBeforeAppear未设置，所有依旧会调用onBeforeEnter
+        //     // 即appear未true时，优先调用onAppear相关，没有设置则降级调用onEnter相关
+        //     appear: true,
+        // }
+        // render(h(Transition, props, () => {
+        //     return h('p', {
+        //         style: {
+        //             width: '100px',
+        //             height: '100px',
+        //             background: 'blue'
+        //         }
+        //     })
+        // }), app);
+        // setTimeout(() => {
+        //     render(h(Transition, props, () => {
+        //         return h('div', {
+        //             style: {
+        //                 width: '100px',
+        //                 height: '100px',
+        //                 background: 'blue'
+        //             }
+        //         })
+        //     }), app);
+        // }, 1000);
+
+        // KeepAlive 组件
+        // 缓存的是dom，keepalive缓存后不会重新渲染，而是复用原来的dom
+        // 1.组件不会被重新创建，会将上次的结果拿出来返回
+        // 2.组件不会被卸载，而是将dom移除掉
+        // 3.内部需要缓存dom
+        const A1 = {
+            setup(props) {
+                onMounted(() => {
+                    console.log('A1 mounted');
+                });
+                onUnmounted(() => {
+                    console.log('A1 unmount');
                 })
-            }
-        }), app);
-        setTimeout(() => {
-            render(h(Transition, props, {
-                default: () => {
-                    return h('p', {
-                        style: {
-                            width: '100px',
-                            height: '100px',
-                            background: 'blue'
-                        }
-                    })
+                const age = ref(0);
+                return () => {
+                    return h('div', [
+                        h('p', '我是a1，我的值现在是: ' + age.value),
+                        h('button', { onClick: () => age.value++ }, '点我'),
+                    ]);
                 }
-            }), app);
-        }, 1000);
+            }
+        }
+        const A2 = {
+            setup(props) {
+                onMounted(() => {
+                    console.log('A2 mounted');
+                });
+                onUnmounted(() => {
+                    console.log('A2 unmount');
+                })
+                return () => {
+                    return h('h1', '我是a2');
+                }
+            }
+        }
+        const A = {
+            setup() {
+                const flag = ref(true);
+                return () => {
+                    return h('div', [
+                        h('button', { onClick: () => flag.value = !flag.value }, '点我切换'),
+                        h(KeepAlive, null, () => h(flag.value ? A1 : A2))
+                    ])
+                }
+            }
+        }
+        render(h(A), app);
+
     </script>
 </body>
 
