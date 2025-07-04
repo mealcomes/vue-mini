@@ -163,3 +163,12 @@ export function createSetupContext(instance) {
     }
 }
 
+export function getComponentName(
+    Component,
+    includeInferred = true,
+): string | false | undefined {
+    return isFunction(Component)
+        ? Component.displayName || Component.name
+        : Component.name || (includeInferred && Component.__name)
+        // || Component.type.__name;   // 这样一行用于测试 component.ts 中与 KeepAlive include 等功能
+}

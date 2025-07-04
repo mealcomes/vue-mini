@@ -1,9 +1,10 @@
-import { invokeArrayFns, ShapeFlags } from "@vue/shared";
+import { invokeArrayFns, isArray, isRegExp, isString, ShapeFlags } from "@vue/shared";
 import { injectHook, onBeforeUnmount, onMounted, onUnmounted, onUpdated } from "../apiLifecycle";
-import { currentInstance, getCurrentInstance } from "../component";
-import { isSameVNodeType } from "../vnode";
+import { currentInstance, getComponentName, getCurrentInstance } from "../component";
+import { isSameVNodeType, isVNode } from "../vnode";
 import { LifecycleHooks } from "../enums";
 import { queuePostFlushCb } from "../scheduler";
+import { watch } from "@vue/reactivity";
 
 export const isKeepAlive = (vnode): boolean =>
     vnode.type.__isKeepAlive
@@ -78,6 +79,15 @@ const KeepAliveImpl = {
             _unmount(vnode, instance);
         }
 
+        function pruneCache(filter: (name: string) => boolean) {
+            cache.forEach((vnode, key) => {
+                const name = getComponentName(vnode.type)
+                if (name && !filter(name)) {
+                    pruneCacheEntry(key)
+                }
+            })
+        }
+
         /**
          * 删除指定key的缓存
          */
@@ -93,6 +103,15 @@ const KeepAliveImpl = {
             cache.delete(key)
             keys.delete(key)
         }
+
+        watch(
+            () => [props.include, props.exclude],
+            ([include, exclude]) => {
+                include && pruneCache(name => matches(include, name))
+                exclude && pruneCache(name => !matches(exclude, name))
+            },
+            { deep: true },
+        )
 
         // 在渲染完成后，缓存KeepAlive内部children组件，即subTree
         // ctrl+点击 见赋值处
@@ -128,14 +147,35 @@ const KeepAliveImpl = {
                 return (current = null);
             }
             const children = slots.default();
-            if (!children || !children.length) {
-                return (current = null);
+            const rawVNode = children[0]; // 此处由于slots被规范化，故default拿到的是数组
+            if (children.length > 1) {
+                current = null;
+                return children;
+            } else if (
+                !isVNode(rawVNode) ||
+                !(rawVNode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT)
+            ) {
+                current = null;
+                return rawVNode;
             }
 
-            const vnode = children[0];  // 此处由于slots被规范化，故default拿到的是数组
+            const vnode = rawVNode; 
             const comp = vnode.type;
 
-            const { include, exclude, max } = props
+            const name = getComponentName(vnode);
+
+            const { include, exclude, max } = props;
+
+            if (
+                (include && (!name || !matches(include, name))) ||
+                (exclude && name && matches(exclude, name))
+            ) {
+                // 如果当前组件的名字被包含在了 exclude 中，便不会对其进行缓存
+                // 即此时 return rawVNode 后，不会有 pendingCacheKey = key 语句，
+                // 从而当该组件被挂载后不会被缓存(见 pendingCacheKey 的作用)
+                current = vnode
+                return rawVNode
+            }
 
             const key = vnode.key == null ? comp : vnode.key;
             const cachedVNode = cache.get(key);  // 从缓存中去key对应的vnode
@@ -145,6 +185,12 @@ const KeepAliveImpl = {
             // 见pendingCacheKey定义处
             pendingCacheKey = key;
 
+            // 一开始的时候，我们只是将 key 加入到了待缓存的 keys 中
+            // 然后为组件 shapeFlag 添加 COMPONENT_SHOULD_KEEP_ALIVE 
+            // 后续当组件被切换成另一个组件时，便因此不会触发 unmount ，而是走 deactivated
+            // 当再次切回的时候，会命中缓存，此时便进入 if 语句，
+            // 此时将为组件 shapeFlag 添加 COMPONENT_KEPT_ALIVE 
+            // 从而避免其走 mount ，而是走 activated 
             if (cachedVNode) {
                 vnode.el = cachedVNode.el;
                 vnode.component = cachedVNode.component;
@@ -187,6 +233,18 @@ export const KeepAlive = KeepAliveImpl as unknown as {
     }
 };
 
+function matches(pattern, name: string): boolean {
+    if (isArray(pattern)) {
+        return pattern.some((p: string | RegExp) => matches(p, name))
+    } else if (isString(pattern)) {
+        return pattern.split(',').includes(name)
+    } else if (isRegExp(pattern)) {
+        pattern.lastIndex = 0
+        return pattern.test(name)
+    }
+    return false
+}
+
 export function onActivated(
     hook,
     target?,
@@ -225,7 +283,7 @@ function registerKeepAliveHook(
 
     // 将包装过后的钩子放到当前实例(即正在执行 setup 的组件实例)上
     // injectHook 函数也就是组件其他生命钩子的注入函数
-    injectHook(type, wrappedHook, target); 
+    injectHook(type, wrappedHook, target);
 
     // 将钩子注入到对应 KeepAlive 组件的根组件中去，这样后续只用遍历根组件的钩子数组依次进行调用即可
     if (target) {

@@ -48,6 +48,7 @@
             Text,
             Fragment,
             ref,
+            reactive,
             onBeforeMount,
             onMounted,
             onBeforeUpdate,
@@ -135,6 +136,7 @@
         // 如果其根组件的子组件发生了卸载，那么其不会被缓存，走的是正常的卸载挂在流程
         // (参见 KeepAlive.ts#injectToKeepAliveRoot)
         const A1 = {
+            __name: 'A1',
             setup(props) {
                 const age = ref(0);
                 onMounted(() => {
@@ -160,6 +162,7 @@
             }
         }
         const A2 = {
+            __name: 'A2',
             setup(props) {
                 onMounted(() => {
                     console.log('A2 mounted');
@@ -181,10 +184,18 @@
         const A = {
             setup() {
                 const flag = ref(true);
+                const list = reactive(['A1']);
                 return () => {
                     return h('div', [
                         h('button', { onClick: () => flag.value = !flag.value }, '点我切换'),
-                        h(KeepAlive, null, () => h(flag.value ? A1 : A2))
+                        // 此处想要测试include，需要更改component.ts#getComponentName
+                        // 以达到获取我们对测试组件定义的 __name 的目的
+                        // 同时解除下面的第一行的 h 函数注释和 // { include: list },并注释掉 null 
+                        // h('button', { onClick: () => list.splice(0, 1) }, '点我清除 keepalive 列表'),
+                        h(KeepAlive,
+                            // { exclude: list },
+                            null, 
+                            () => h(flag.value ? A1 : A2))
                     ])
                 }
             }

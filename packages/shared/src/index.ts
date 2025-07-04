@@ -21,6 +21,8 @@ export const isMap = (val: unknown): val is Map<any, any> =>
 export const isPlainObject = (val: unknown): val is object =>
     Object.prototype.toString.call(val) === '[object Object]'
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
+export const isRegExp = (val: unknown): val is RegExp =>
+    Object.prototype.toString.call(val) === '[object RegExp]'
 
 export const isOn = (key: string): boolean =>
     key.charCodeAt(0) === 111 /* o */ &&
