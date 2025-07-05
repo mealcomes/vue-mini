@@ -2,7 +2,7 @@
 
 个人的简化版 Vue3 框架实现，采用 TypeScript 编写(其实还是JavaScript)，内包含大量注释，旨在帮助理解 Vue3 的核心原理与实现机制。项目结构和构建方式借鉴了 Vue3 的 Monorepo 方案，目前包含响应式系统（reactivity）、运行时核心（runtime-core）等模块。
 
-> ⚠️ 本项目仍处于开发中，部分功能在不断完善。
+> ⚠️ 本项目仍处于开发中，部分功能正参考 [Vue.js](https://github.com/vuejs/vue-next) 不断完善中。
 
 ## packages 目录结构
 
