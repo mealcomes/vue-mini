@@ -66,6 +66,15 @@ export function traverse(
 function doWatch(source, cb, options) {
     const { immediate, deep } = options;
 
+    const warnInvalidSource = (s: unknown) => {
+        ; (options.onWarn || console.log)(
+            `Invalid watch source: `,
+            s,
+            `A watch source can only be a getter/effect function, a ref, ` +
+            `a reactive object, or an array of these types.`,
+        )
+    }
+
     const reactiveGetter = (source) => {
         if (deep === false || deep === 0) {
             return traverse(source, 1);
@@ -80,6 +89,17 @@ function doWatch(source, cb, options) {
     }
     else if (isRef(source)) {
         getter = () => source.value;
+    } else if (isArray(source)) {
+        getter = () =>
+            source.map(s => {
+                if (isRef(s)) {
+                    return s.value
+                } else if (isReactive(s)) {
+                    return reactiveGetter(s)
+                } else {
+                    warnInvalidSource(s);
+                }
+            })
     } else if (isFunction(source)) {
         getter = source;
     } else {

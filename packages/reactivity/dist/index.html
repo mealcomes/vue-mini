@@ -136,22 +136,62 @@
         //     state.age = 66
         // }, 1000)
 
-        // watch 监听返回响应式对象的函数，且为深度监听
-        const state = reactive({
+        // // watch 监听返回响应式对象的函数，且为深度监听
+        // const state = reactive({
+        //     address: {
+        //         city: 'Beijing'
+        //     }
+        // })
+        // watch(() => state, (newVal, oldVal) => {
+        //     console.log(oldVal, newVal);
+        // }, {
+        //     immediate: true,
+        //     deep: true
+        // })
+        // setTimeout(() => {
+        //     state.address = {
+        //         city: 'shanghai'
+        //     }
+        // }, 1000);
+
+        // watch 监听元素为 ref/reactive 的普通数组 - 1
+        const age = ref(1);
+        const data = reactive({
             address: {
                 city: 'Beijing'
             }
         })
-        watch(() => state, (newVal, oldVal) => {
+        watch([age, data], (newVal, oldVal) => {
             console.log(oldVal, newVal);
         }, {
             immediate: true,
-            deep: true
         })
         setTimeout(() => {
-            state.address = {
-                city: 'shanghai'
-            }
+            age.value++;
+            setTimeout(() => {
+                data.address.city = 'shanghai';
+            }, 1000);
+        }, 1000);
+
+        // watch 监听元素为 ref/reactive 的普通数组 - 2
+        const state = [
+            ref(1),
+            reactive({
+                address: {
+                    city: 'Beijing'
+                }
+            })
+        ]
+        watch(state, (newVal, oldVal) => {
+            console.log(oldVal, newVal);
+        }, {
+            immediate: true,
+        })
+        setTimeout(() => {
+            state[0].value++;
+            setTimeout(() => {
+                state[1].address.city = 'shanghai';
+            }, 1000);
         }, 1000);
 
         // // watch clearup演示
