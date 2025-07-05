@@ -80,12 +80,16 @@ function doWatch(source, cb, options) {
     }
     else if (isRef(source)) {
         getter = () => source.value;
-    }
-    else if (isFunction(source)) {
+    } else if (isFunction(source)) {
         getter = source;
-    }
-    else {
+    } else {
         getter = () => { };
+    }
+
+    if (cb && deep) {
+        const baseGetter = getter;
+        const depth = deep === true ? Infinity : deep;
+        getter = () => traverse(baseGetter(), depth);
     }
 
     let oldValue;

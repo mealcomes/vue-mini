@@ -9,9 +9,6 @@ const isNonTrackableKeys = (key) => {
 
 const builtInSymbols = new Set(
     Object.getOwnPropertyNames(Symbol)
-        // ios10.x Object.getOwnPropertyNames(Symbol) can enumerate 'arguments' and 'caller'
-        // but accessing them on Symbol leads to TypeError because Symbol is a strict mode
-        // function
         .filter(key => key !== 'arguments' && key !== 'caller')
         .map(key => Symbol[key as keyof SymbolConstructor])
         .filter((val) => typeof val === 'symbol'),

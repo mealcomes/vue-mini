@@ -123,7 +123,7 @@
         // });
 
         // watch初试
-        // const unwatch = watch(state.address, (oldVal, newVal) => {
+        // const unwatch = watch(state.address, (newVal, oldVal) => {
         //     console.log(oldVal, newVal);
         // }, {
         //     immediate: true,
@@ -135,6 +135,24 @@
         //     state.name = 'Mike'
         //     state.age = 66
         // }, 1000)
+
+        // watch 监听返回响应式对象的函数，且为深度监听
+        const state = reactive({
+            address: {
+                city: 'Beijing'
+            }
+        })
+        watch(() => state, (newVal, oldVal) => {
+            console.log(oldVal, newVal);
+        }, {
+            immediate: true,
+            deep: true
+        })
+        setTimeout(() => {
+            state.address = {
+                city: 'shanghai'
+            }
+        }, 1000);
 
         // // watch clearup演示
         // const val = ref("null")
