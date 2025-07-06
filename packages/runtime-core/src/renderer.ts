@@ -1,6 +1,6 @@
 import { invokeArrayFns, ShapeFlags } from "@vue/shared";
-import { Fragment, isSameVNodeType, mergeProps, normalizeVNode } from "./vnode";
-import { Text } from "./vnode";
+import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
+import { Text, Comment } from "./vnode";
 import { isRef, ReactiveEffect } from "@vue/reactivity";
 import { queueJob } from "./scheduler";
 import { createComponentInstance, setupComponent } from "./component";
@@ -177,6 +177,18 @@ export function createRenderer(options) {
             if (n2.children !== n1.children) {
                 hostSetText(el, n2.children as string)
             }
+        }
+    }
+
+    const processCommentNode = (n1, n2, container, anchor) => {
+        if (n1 == null) {
+            hostInsert(
+                (n2.el = hostCreateComment((n2.children as string) || '')),
+                container,
+                anchor
+            );
+        } else {
+            n2.el = n1.el;
         }
     }
 
@@ -561,6 +573,9 @@ export function createRenderer(options) {
             // 例如 <div>hello</div> 中的 hello
             case Text:
                 processText(n1, n2, container, anchor);
+                break;
+            case Comment:
+                processCommentNode(n1, n2, container, anchor);
                 break;
             case Fragment:
                 processFragment(n1, n2, container, anchor, parentComponent);

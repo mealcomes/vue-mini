@@ -2,6 +2,7 @@ import { isArray, isFunction, isObject, isOn, isString, normalizeClass, normaliz
 import { isTeleport } from "./components/Teleport";
 
 export const Text: unique symbol = Symbol.for('v-txt');
+export const Comment: unique symbol = Symbol.for('v-cmt');
 export const Fragment = Symbol.for('v-fgt');
 
 export function isVNode(value: any) {
@@ -13,6 +14,9 @@ export function isSameVNodeType(n1, n2) {
 }
 
 export function createVNode(type, props = null, children = null) {
+    if (!type) {
+        type = Comment
+    }
     const shapeFlag = isString(type)
         ? ShapeFlags.ELEMENT             // 元素
         : isTeleport(type)
@@ -54,7 +58,7 @@ export function createVNode(type, props = null, children = null) {
 
 export function normalizeVNode(child) {
     if (child == null || typeof child === 'boolean') {
-        return null;
+        return createVNode(Comment);
     } else if (isArray(child)) {
         return createVNode(Fragment, null, child.slice());
     } else if (isVNode(child)) {
