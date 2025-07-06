@@ -39,6 +39,7 @@
         //     Teleport,
         //     Transition,
         //     KeepAlive,
+        //     defineAsyncComponent
         // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
 
         import {
@@ -63,6 +64,7 @@
             KeepAlive,
             onActivated,
             onDeactivated,
+            defineAsyncComponent,
         } from './runtime-dom.js';
 
         // // Teleport 组件
@@ -127,80 +129,128 @@
         //     }), app);
         // }, 1000);
 
-        // KeepAlive 组件
-        // 缓存的是dom，keepalive缓存后不会重新渲染，而是复用原来的dom
-        // 1.组件不会被重新创建，会将上次的结果拿出来返回
-        // 2.组件不会被卸载，而是将dom移除掉
-        // 3.内部需要缓存dom
-        // 注意：KeepAlive组件只会缓存其根组件的dom元素，
-        // 如果其根组件的子组件发生了卸载，那么其不会被缓存，走的是正常的卸载挂在流程
-        // (参见 KeepAlive.ts#injectToKeepAliveRoot)
-        const A1 = {
-            __name: 'A1',
-            setup(props) {
-                const age = ref(0);
-                onMounted(() => {
-                    console.log('A1 mounted');
-                });
-                onUnmounted(() => {
-                    console.log('A1 unmount');
-                });
-                onActivated(() => {
-                    console.log('A1 activated');
-                    console.log(getCurrentInstance().subTree.el);
-                    age.value++;
-                });
-                onDeactivated(() => {
-                    console.log('A1 deactivated');
-                });
-                return () => {
-                    return h('div', [
-                        h('p', '我是a1，我的值现在是: ' + age.value),
-                        h('button', { onClick: () => age.value++ }, '点我'),
-                    ]);
-                }
-            }
-        }
-        const A2 = {
-            __name: 'A2',
-            setup(props) {
-                onMounted(() => {
-                    console.log('A2 mounted');
-                });
-                onUnmounted(() => {
-                    console.log('A2 unmount');
+        // // KeepAlive 组件
+        // // 缓存的是dom，keepalive缓存后不会重新渲染，而是复用原来的dom
+        // // 1.组件不会被重新创建，会将上次的结果拿出来返回
+        // // 2.组件不会被卸载，而是将dom移除掉
+        // // 3.内部需要缓存dom
+        // // 注意：KeepAlive组件只会缓存其根组件的dom元素，
+        // // 如果其根组件的子组件发生了卸载，那么其不会被缓存，走的是正常的卸载挂在流程
+        // // (参见 KeepAlive.ts#injectToKeepAliveRoot)
+        // const A1 = {
+        //     __name: 'A1',
+        //     setup(props) {
+        //         const age = ref(0);
+        //         onMounted(() => {
+        //             console.log('A1 mounted');
+        //         });
+        //         onUnmounted(() => {
+        //             console.log('A1 unmount');
+        //         });
+        //         onActivated(() => {
+        //             console.log('A1 activated');
+        //             console.log(getCurrentInstance().subTree.el);
+        //             age.value++;
+        //         });
+        //         onDeactivated(() => {
+        //             console.log('A1 deactivated');
+        //         });
+        //         return () => {
+        //             return h('div', [
+        //                 h('p', '我是a1，我的值现在是: ' + age.value),
+        //                 h('button', { onClick: () => age.value++ }, '点我'),
+        //             ]);
+        //         }
+        //     }
+        // }
+        // const A2 = {
+        //     __name: 'A2',
+        //     setup(props) {
+        //         onMounted(() => {
+        //             console.log('A2 mounted');
+        //         });
+        //         onUnmounted(() => {
+        //             console.log('A2 unmount');
+        //         })
+        //         onActivated(() => {
+        //             console.log('A2 activated');
+        //         });
+        //         onDeactivated(() => {
+        //             console.log('A2 deactivated');
+        //         });
+        //         return () => {
+        //             return h('h1', '我是a2');
+        //         }
+        //     }
+        // }
+        // const A = {
+        //     setup() {
+        //         const flag = ref(true);
+        //         // TODO 数组响应式(不然这里改变了后不会进行组件重新渲染，
+        //         // KeepAlive 里面也就无法监听到 exclude/include 的变化)
+        //         const list = reactive(['A1']);  
+        //         return () => {
+        //             return h('div', [
+        //                 h('button', { onClick: () => flag.value = !flag.value }, '点我切换'),
+        //                 // 此处想要测试include，需要更改component.ts#getComponentName
+        //                 // 以达到获取我们对测试组件定义的 __name 的目的
+        //                 // 同时解除下面的第一行的 h 函数注释和 // { include: list },并注释掉 null 
+        //                 // h('button', { onClick: () => list.splice(0, 1) }, '点我清除 keepalive 列表'),
+        //                 h(KeepAlive,
+        //                     // { exclude: list },
+        //                     null, 
+        //                     () => h(flag.value ? A1 : A2))
+        //             ])
+        //         }
+        //     }
+        // }
+        // render(h(A), app);
+
+        // 异步组件
+        // 原理和图片懒加载类似，刚开始渲染一个空(注释节点)，加载完成后再重新渲染结果
+        const comp = import('./asyncComponent.js');
+        console.log(comp); // Promise
+        let i = 0;
+        const MyComponent = defineAsyncComponent({
+            loader: () => {
+                // loader 里面可以自己放 Promise ，也可以通过 import 导入组件
+
+                // return comp;  // 通常是这种写法，即从外部导入组件，当然也可以类似下面写法自己定义加载需要的时间
+                return new Promise((res, rej) => {
+                    setTimeout(() => {
+                        // 由于我们是在 2000ms 后返回的结果，
+                        // 所以这里如果我们设置 timeout: 1000 的话，那么便会 loader 失败，
+                        // 最终展现errorComponent
+                        if (i < 2) {
+                            rej(() => h('div', 'Hello Vue'));
+                        } else {
+                            res(() => h('div', 'Hello Vue'));
+                        }
+                        i++;
+                    }, 2000)
                 })
-                onActivated(() => {
-                    console.log('A2 activated');
-                });
-                onDeactivated(() => {
-                    console.log('A2 deactivated');
-                });
-                return () => {
-                    return h('h1', '我是a2');
+            },
+            timeout: 1000,
+            errorComponent: {
+                render: () => {
+                    return h('span', '加载失败了~~~')
                 }
-            }
-        }
-        const A = {
-            setup() {
-                const flag = ref(true);
-                const list = reactive(['A1']);
-                return () => {
-                    return h('div', [
-                        h('button', { onClick: () => flag.value = !flag.value }, '点我切换'),
-                        // 此处想要测试include，需要更改component.ts#getComponentName
-                        // 以达到获取我们对测试组件定义的 __name 的目的
-                        // 同时解除下面的第一行的 h 函数注释和 // { include: list },并注释掉 null 
-                        // h('button', { onClick: () => list.splice(0, 1) }, '点我清除 keepalive 列表'),
-                        h(KeepAlive,
-                            // { exclude: list },
-                            null, 
-                            () => h(flag.value ? A1 : A2))
-                    ])
+            },
+            delay: 200,
+            loadingComponent: {
+                render: () => {
+                    return h('div', '加载中...');
                 }
+            },
+            onError(err, retry, fail, retries) {   // 错误处理
+                console.log(err, retry, fail, retries);
+                setTimeout(() => {
+                    retry();   // 尝试重新加载
+                    console.log('重新加载中...');
+                }, 1000);
             }
-        }
-        render(h(A), app);
+        })
+        render(h(MyComponent), app);
 
     </script>
 </body>

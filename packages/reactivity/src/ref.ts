@@ -6,7 +6,7 @@ import { createDep } from "./reactiveEffect";
 
 
 // ref shallowRef
-export function ref(value) {
+export function ref(value?) {
     return createRef(value);
 }
 

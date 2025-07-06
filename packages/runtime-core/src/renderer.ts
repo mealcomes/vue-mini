@@ -613,7 +613,6 @@ export function createRenderer(options) {
         if (ref != null) {
             setRef(ref, n2);
         }
-
     }
 
     const unmount = (vnode, parentComponent) => {

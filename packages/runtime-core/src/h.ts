@@ -26,7 +26,7 @@ h(Component, null, {})
 import { isArray, isObject } from "@vue/shared";
 import { createVNode, isVNode } from "./vnode";
 
-export function h(type, propsOrChildren, children) {
+export function h(type, propsOrChildren?, children?) {
     const l = arguments.length;
 
     // 处理propsOrChildren
