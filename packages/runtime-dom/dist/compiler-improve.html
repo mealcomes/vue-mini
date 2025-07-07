@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .v-enter-active,
+        .v-leave-active {
+            transition: opacity 1s ease;
+        }
+
+        .v-enter-from,
+        .v-leave-to {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+    <div id="root"></div>
+    <div id="root1"></div>
+    <div id="root2"></div>
+    <script type="module">
+
+        // import {
+        //     createElementVNode as _createElementVNode,
+        //     toDisplayString as _toDisplayString,
+        //     openBlock as _openBlock,
+        //     createElementBlock as _createElementBlock,
+        //     toRefs,
+        //     reactive,
+        //     render,
+        //     h
+        // } from "/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+
+        import {
+            createElementVNode as _createElementVNode,
+            toDisplayString as _toDisplayString,
+            openBlock as _openBlock,
+            createElementBlock as _createElementBlock,
+            toRefs,
+            reactive,
+            render,
+            h
+        } from "./runtime-dom.js"
+
+
+        // 编译优化-靶向更新
+        // 在模板编译的时候会添加 patchFlag, 用于优化 diff 算法
+        // 例如存在下面模板：
+        // <p>Hello Vue</p>
+        // <span>{{ name }}</span>
+        // 此时基本可以得知 p 标签是固定的，只有 span 标签会变化
+        // 因此我们将 span 节点单独存在一个数组里面(dynamicChildren),
+        // 后续数据变化时只需要比对该数组即可
+        const MyComponent = {
+            setup() {
+                const state = reactive({ name: 'jw' });
+                setTimeout(() => {
+                    state.name = 'Bilibili';
+                }, 1000);
+                return {
+                    ...toRefs(state),
+                };
+            },
+            render(_ctx, _cache,) {
+                const vnode = (
+                    _openBlock(),  // 打开一个 block
+                    // 这里其实就是在 createVNode 返回的 vnode 上添加 dynamicChildren ,
+                    // 用于存储会变更的 vnode (即存储patchFlag > 0的vnode)
+                    _createElementBlock("div", null, [
+                        // patchFlag(第四个参数) 是模板编译添加的
+                        _createElementVNode("h1", null, "Hello Vue", -1 /* CACHED */),
+                        _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
+                    ])
+                );
+                console.log(vnode);
+                return vnode;
+            },
+        }
+        render(h(MyComponent), app);
+
+    </script>
+</body>
+
+</html>

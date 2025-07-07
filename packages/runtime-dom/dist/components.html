@@ -206,51 +206,51 @@
         // }
         // render(h(A), app);
 
-        // 异步组件
-        // 原理和图片懒加载类似，刚开始渲染一个空(注释节点)，加载完成后再重新渲染结果
-        const comp = import('./asyncComponent.js');
-        console.log(comp); // Promise
-        let i = 0;
-        const MyComponent = defineAsyncComponent({
-            loader: () => {
-                // loader 里面可以自己放 Promise ，也可以通过 import 导入组件
+        // // 异步组件
+        // // 原理和图片懒加载类似，刚开始渲染一个空(注释节点)，加载完成后再重新渲染结果
+        // const comp = import('./asyncComponent.js');
+        // console.log(comp); // Promise
+        // let i = 0;
+        // const MyComponent = defineAsyncComponent({
+        //     loader: () => {
+        //         // loader 里面可以自己放 Promise ，也可以通过 import 导入组件
 
-                // return comp;  // 通常是这种写法，即从外部导入组件，当然也可以类似下面写法自己定义加载需要的时间
-                return new Promise((res, rej) => {
-                    setTimeout(() => {
-                        // 由于我们是在 2000ms 后返回的结果，
-                        // 所以这里如果我们设置 timeout: 1000 的话，那么便会 loader 失败，
-                        // 最终展现errorComponent
-                        if (i < 2) {
-                            rej(() => h('div', 'Hello Vue'));
-                        } else {
-                            res(() => h('div', 'Hello Vue'));
-                        }
-                        i++;
-                    }, 2000)
-                })
-            },
-            timeout: 1000,
-            errorComponent: {
-                render: () => {
-                    return h('span', '加载失败了~~~')
-                }
-            },
-            delay: 200,
-            loadingComponent: {
-                render: () => {
-                    return h('div', '加载中...');
-                }
-            },
-            onError(err, retry, fail, retries) {   // 错误处理
-                console.log(err, retry, fail, retries);
-                setTimeout(() => {
-                    retry();   // 尝试重新加载
-                    console.log('重新加载中...');
-                }, 1000);
-            }
-        })
-        render(h(MyComponent), app);
+        //         // return comp;  // 通常是这种写法，即从外部导入组件，当然也可以类似下面写法自己定义加载需要的时间
+        //         return new Promise((res, rej) => {
+        //             setTimeout(() => {
+        //                 // 由于我们是在 2000ms 后返回的结果，
+        //                 // 所以这里如果我们设置 timeout: 1000 的话，那么便会 loader 失败，
+        //                 // 最终展现errorComponent
+        //                 if (i < 2) {
+        //                     rej(() => h('div', 'Hello Vue'));
+        //                 } else {
+        //                     res(() => h('div', 'Hello Vue'));
+        //                 }
+        //                 i++;
+        //             }, 2000)
+        //         })
+        //     },
+        //     timeout: 1000,
+        //     errorComponent: {
+        //         render: () => {
+        //             return h('span', '加载失败了~~~')
+        //         }
+        //     },
+        //     delay: 200,
+        //     loadingComponent: {
+        //         render: () => {
+        //             return h('div', '加载中...');
+        //         }
+        //     },
+        //     onError(err, retry, fail, retries) {   // 错误处理
+        //         console.log(err, retry, fail, retries);
+        //         setTimeout(() => {
+        //             retry();   // 尝试重新加载
+        //             console.log('重新加载中...');
+        //         }, 1000);
+        //     }
+        // })
+        // render(h(MyComponent), app);
 
     </script>
 </body>

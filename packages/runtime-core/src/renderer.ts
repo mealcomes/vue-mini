@@ -1,4 +1,4 @@
-import { invokeArrayFns, ShapeFlags } from "@vue/shared";
+import { invokeArrayFns, PatchFlags, ShapeFlags } from "@vue/shared";
 import { Fragment, isSameVNodeType, normalizeVNode } from "./vnode";
 import { Text, Comment } from "./vnode";
 import { isRef, ReactiveEffect } from "@vue/reactivity";
@@ -207,7 +207,7 @@ export function createRenderer(options) {
         }
         // n1已经存在(container上已经存在dom)，需要进行比对进行diff
         else {
-            patchElement(n1, n2, container, anchor, parentComponent);
+            patchElement(n1, n2, parentComponent);
         }
     }
 
@@ -270,7 +270,7 @@ export function createRenderer(options) {
         updateSlots(instance, nextVNode.children);
     }
 
-    const patchProp = (oldProps, newProps, el) => {
+    const patchProps = (oldProps, newProps, el) => {
         if (oldProps !== newProps) {
             // 覆盖旧的属性或新添加属性
             for (let key in newProps) {
@@ -494,6 +494,15 @@ export function createRenderer(options) {
         }
     }
 
+    /**
+     * dynamicChildren 比对
+     */
+    const patchBlockChildren = (oldChildren, newChildren, fallbackContainer, parentComponent) => {
+        for (let i = 0; i < newChildren.length; i++) {
+            patch(oldChildren[i], newChildren[i], fallbackContainer, null, parentComponent);
+        }
+    }
+
     // 比对children进行diff
     // 进入该函数时，n1和n2的key与type一定是相同的
     const patchChildren = (n1, n2, container, anchor, parentComponent) => {
@@ -542,17 +551,65 @@ export function createRenderer(options) {
     // 进入该函数时，n1和n2的key与type一定是相同的
     // 1. 比较元素的差异，尽可能复用dom元素
     // 2. 比较属性和元素的子节点
-    const patchElement = (n1, n2, container, anchor, parentComponent) => {
+    const patchElement = (n1, n2, parentComponent) => {
         let el = (n2.el = n1.el);  // dom 复用
+        let { patchFlag, dynamicChildren } = n2;  // 用于模板编译-靶向更新
 
         let oldProps = n1.props || {};
         let newProps = n2.props || {};
 
-        // 比对样式
-        patchProp(oldProps, newProps, el);
+        if (dynamicChildren) {
+            // 存在 dynamicChildren(模板编译-靶向更新，见compiler-improve.html)
+            patchBlockChildren(n1.dynamicChildren!, dynamicChildren, el, parentComponent);
+        } else {
+            // 直接比对子节点(第三个参数传的是el而不是container)
+            patchChildren(n1, n2, el, null, parentComponent);
+        }
 
-        // 比对子节点(第三个参数传的是el而不是container)
-        patchChildren(n1, n2, el, anchor, parentComponent);
+        if (patchFlag) {
+            // 有 patchFlag, 就根据其进行比对
+
+            // 如果是比对全部的 props, 则依旧全量比对 patchProps
+            if (patchFlag & PatchFlags.FULL_PROPS) {
+                patchProps(oldProps, newProps, el);
+            } else {
+                // class 是响应式的
+                // <span :class="item"></span>
+                if (patchFlag & PatchFlags.CLASS) {
+                    if (oldProps.class !== newProps.class) {
+                        hostPatchProp(el, 'class', null, newProps.class);
+                    }
+                }
+                // style 是响应式的
+                // <span :style="item"></span>
+                if (patchFlag & PatchFlags.STYLE) {
+                    hostPatchProp(el, 'style', oldProps.style, newProps.style)
+                };
+                // 其他属性是响应式的
+                if (patchFlag & PatchFlags.PROPS) {
+                    const propsToUpdate = n2.dynamicProps!;
+                    for (let i = 0; i < propsToUpdate.length; i++) {
+                        const key = propsToUpdate[i];
+                        const prev = oldProps[key];
+                        const next = newProps[key];
+                        // #1471 force patch value
+                        if (next !== prev || key === 'value') {
+                            hostPatchProp(el, key, prev, next);
+                        }
+                    }
+                }
+            }
+            // 文本是响应式的
+            // <span>{{ name }}</span>
+            if (patchFlag & PatchFlags.TEXT) {
+                if (n1.children !== n2.children) {
+                    hostSetElementText(el, n2.children as string)
+                }
+            }
+        } else {
+            // 直接全量比对props
+            patchProps(oldProps, newProps, el);
+        }
     }
 
     const patch = (n1, n2, container, anchor = null, parentComponent = null) => {

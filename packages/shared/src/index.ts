@@ -1,5 +1,7 @@
 export * from './shapeFlags'
 export * from './normalizeProp'
+export * from './toDisplayString'
+export * from './patchFlags'
 
 export function isObject(value: unknown) {
     return typeof value === 'object' && value !== null;

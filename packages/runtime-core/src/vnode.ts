@@ -5,6 +5,30 @@ export const Text: unique symbol = Symbol.for('v-txt');
 export const Comment: unique symbol = Symbol.for('v-cmt');
 export const Fragment = Symbol.for('v-fgt');
 
+export let currentBlock = null;
+
+export function openBlock() {
+    currentBlock = [];
+}
+
+export function closeBlock() {
+    currentBlock = null;
+}
+
+function setupBlock(vnode) {
+    // 当前 elementBlock 会收集子节点，用于当前 block 来收集
+    vnode.dynamicChildren = currentBlock;
+    closeBlock()
+    return vnode
+}
+
+/**
+ * 有收集 dynamicChildren 功能的 createVNode
+ */
+export function createElementBlock(type, props, children, patchFlag) {
+    return setupBlock(createVNode(type, props, children, patchFlag));
+}
+
 export function isVNode(value: any) {
     return value ? value.__v_isVNode === true : false
 }
@@ -13,7 +37,7 @@ export function isSameVNodeType(n1, n2) {
     return n1.type === n2.type && n1.key === n2.key;
 }
 
-export function createVNode(type, props = null, children = null) {
+export function createVNode(type, props = null, children = null, patchFlag?) {
     if (!type) {
         type = Comment
     }
@@ -35,6 +59,14 @@ export function createVNode(type, props = null, children = null) {
         el: null,
         shapeFlag,
         ref: props?.ref,     // 组件上的ref，见index.html下ref原理相关代码
+        patchFlag,
+    }
+
+    // 如果 patchFlag 大于0，则说明该 vnode 是需要变更的 vnode
+    // 例如 <span>{{ name }}<span>
+    // 其中存在响应式数据 name, 此时 patchFlag 为 Text
+    if (currentBlock && patchFlag > 0) {
+        currentBlock.push(vnode);
     }
 
     // children规范化
@@ -55,6 +87,8 @@ export function createVNode(type, props = null, children = null) {
 
     return vnode;
 }
+
+export { createVNode as createElementVNode }
 
 export function normalizeVNode(child) {
     if (child == null || typeof child === 'boolean') {
