@@ -5,20 +5,39 @@ export const Text: unique symbol = Symbol.for('v-txt');
 export const Comment: unique symbol = Symbol.for('v-cmt');
 export const Fragment = Symbol.for('v-fgt');
 
+/**
+ * 用于处理多级 block 
+ */
+export const blockStack = [];
 export let currentBlock = null;
 
 export function openBlock() {
-    currentBlock = [];
+    blockStack.push(currentBlock = []);
 }
 
 export function closeBlock() {
-    currentBlock = null;
+    blockStack.pop();
+    // 将 currentBlock 指向上一个 block
+    currentBlock = blockStack[blockStack.length - 1] || null;
 }
 
 function setupBlock(vnode) {
     // 当前 elementBlock 会收集子节点，用于当前 block 来收集
     vnode.dynamicChildren = currentBlock;
-    closeBlock()
+
+    // 将 currentBlock 指向上一个 block 或者置为 null, 这样当父 vnode 创建的时候就能拿到这个 block
+    closeBlock(); 
+
+    // 如果 closeBlock 后， currentBlock 依旧不为 null
+    // 则说明本 vnode 的父 vnode 也开了一个 block，那么便将本 vnode 加入到 currentBlock 中
+    // 从而其父亲也能将这个 currentBlock 存为 dynamicChildren
+    // 这样就能形成 
+    // vnode1.dynamicChildren -> children1 
+    // vnode2(children1).dynamicChildren -> children2
+    if (currentBlock) {
+        currentBlock.push(vnode);
+    }
+
     return vnode
 }
 
@@ -65,6 +84,8 @@ export function createVNode(type, props = null, children = null, patchFlag?) {
     // 如果 patchFlag 大于0，则说明该 vnode 是需要变更的 vnode
     // 例如 <span>{{ name }}<span>
     // 其中存在响应式数据 name, 此时 patchFlag 为 Text
+    // 此时将该 vnode 加入到 currentBlock(如果不为 null, 且一定是父 vnode 创建的)
+    // 后面该 vnode 的父 vnode 便会将该 currentBlock 存为 dynamicChildren
     if (currentBlock && patchFlag > 0) {
         currentBlock.push(vnode);
     }

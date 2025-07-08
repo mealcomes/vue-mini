@@ -48,35 +48,74 @@
         } from "./runtime-dom.js"
 
 
-        // 编译优化-靶向更新
-        // 在模板编译的时候会添加 patchFlag, 用于优化 diff 算法
-        // 例如存在下面模板：
-        // <p>Hello Vue</p>
-        // <span>{{ name }}</span>
-        // 此时基本可以得知 p 标签是固定的，只有 span 标签会变化
-        // 因此我们将 span 节点单独存在一个数组里面(dynamicChildren),
-        // 后续数据变化时只需要比对该数组即可
+        // // 编译优化-靶向更新
+        // // 在模板编译的时候会添加 patchFlag, 用于优化 diff 算法
+        // // 例如存在下面模板：
+        // // <p>Hello Vue</p>
+        // // <span>{{ name }}</span>
+        // // 此时基本可以得知 p 标签是固定的，只有 span 标签会变化
+        // // 因此我们将 span 节点单独存在一个数组里面(dynamicChildren),
+        // // 后续数据变化时只需要比对该数组即可
+        // const MyComponent = {
+        //     setup() {
+        //         const state = reactive({ name: 'jw' });
+        //         setTimeout(() => {
+        //             state.name = 'Bilibili';
+        //         }, 1000);
+        //         return {
+        //             ...toRefs(state),
+        //         };
+        //     },
+        //     render(_ctx, _cache,) {
+        //         const vnode = (
+        //             _openBlock(),  // 打开一个 block
+        //             // 这里其实就是在 createVNode 返回的 vnode 上添加 dynamicChildren ,
+        //             // 用于存储会变更的 vnode (即存储patchFlag > 0的vnode)
+        //             _createElementBlock("div", null, [
+        //                 // patchFlag(第四个参数) 是模板编译添加的
+        //                 _createElementVNode("h1", null, "Hello Vue", -1 /* CACHED */),
+        //                 _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
+        //             ])
+        //         );
+        //         console.log(vnode);
+        //         return vnode;
+        //     },
+        // }
+        // render(h(MyComponent), app);
+
+        // 针对下面这种情况
+        // <div>
+        //     <p v-if="flag">
+        //         <span>{{ a }}</span>
+        //     </p>
+        //     <div v-else>
+        //         <span>{{ a }}</span>
+        //     </div>
+        // </div>
+        // 当 flag 为 true 时，外层 div 作为 block 收集到了 if 分支的 span
+        // 现在 flag 变为了 false，外层 div 作为 block 收集到了 else 分支的 span
+        // 但是"二级"标签的 p 和 div 没有被收集到
+        // 所以针对类似的情况，会对这里的"二级"标签各自开启一个 block
         const MyComponent = {
             setup() {
-                const state = reactive({ name: 'jw' });
+                const state = reactive({ flag: true, name: 'Hello Vue!' });
                 setTimeout(() => {
-                    state.name = 'Bilibili';
+                    state.flag = false;
                 }, 1000);
                 return {
                     ...toRefs(state),
                 };
             },
             render(_ctx, _cache,) {
-                const vnode = (
-                    _openBlock(),  // 打开一个 block
-                    // 这里其实就是在 createVNode 返回的 vnode 上添加 dynamicChildren ,
-                    // 用于存储会变更的 vnode (即存储patchFlag > 0的vnode)
-                    _createElementBlock("div", null, [
-                        // patchFlag(第四个参数) 是模板编译添加的
-                        _createElementVNode("h1", null, "Hello Vue", -1 /* CACHED */),
-                        _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
-                    ])
-                );
+                const vnode = (_openBlock(), _createElementBlock("div", null, [
+                    (_ctx.flag)
+                        ? (_openBlock(), _createElementBlock("p", { key: 0 }, [
+                            _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
+                        ]))
+                        : (_openBlock(), _createElementBlock("div", { key: 1 }, [
+                            _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
+                        ]))
+                ]));
                 console.log(vnode);
                 return vnode;
             },
